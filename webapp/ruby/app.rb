@@ -4,7 +4,7 @@ require 'mysql2-cs-bind'
 require 'tilt/erubis'
 require 'erubis'
 
-module Isucon5
+module Isucon
   class AuthenticationError < StandardError; end
   class PermissionDenied < StandardError; end
   class ContentNotFound < StandardError; end
@@ -16,11 +16,10 @@ module Isucon5
   ::Time.prepend TimeWithoutZone
 end
 
-class Isucon5::WebApp < Sinatra::Base
+class Isucon::WebApp < Sinatra::Base
   use Rack::Session::Cookie
   set :erb, escape_html: true
   set :public_folder, File.expand_path('../../static', __FILE__)
-  #set :sessions, true
   set :session_secret, ENV['ISUCON5_SESSION_SECRET'] || 'beermoris'
   set :protection, true
 
@@ -54,14 +53,14 @@ class Isucon5::WebApp < Sinatra::Base
 
     def authenticate(email, password)
       query = <<SQL
-SELECT u.id AS id, u.account_name AS account_name, u.nick_name AS nick_name, u.email AS email
+SELECT *
 FROM users u
 JOIN salts s ON u.id = s.user_id
-WHERE u.email = ? AND u.passhash = SHA2(CONCAT(?, s.salt), 512)
+WHERE u.email = ? AND u.pass_hash = SHA2(CONCAT(?, s.salt), 256)
 SQL
       result = db.xquery(query, email, password).first
       unless result
-        raise Isucon5::AuthenticationError
+        raise Isucon::AuthenticationError
       end
       session[:user_id] = result[:id]
       result
@@ -72,11 +71,11 @@ SQL
       unless session[:user_id]
         return nil
       end
-      @user = db.xquery('SELECT id, account_name, nick_name, email FROM users WHERE id=?', session[:user_id]).first
+      @user = db.xquery('SELECT * FROM users WHERE id=?', session[:user_id]).first
       unless @user
         session[:user_id] = nil
         session.clear
-        raise Isucon5::AuthenticationError
+        raise Isucon::AuthenticationError
       end
       @user
     end
@@ -89,13 +88,13 @@ SQL
 
     def get_user(user_id)
       user = db.xquery('SELECT * FROM users WHERE id = ?', user_id).first
-      raise Isucon5::ContentNotFound unless user
+      raise Isucon::ContentNotFound unless user
       user
     end
 
     def user_from_account(account_name)
       user = db.xquery('SELECT * FROM users WHERE account_name = ?', account_name).first
-      raise Isucon5::ContentNotFound unless user
+      raise Isucon::ContentNotFound unless user
       user
     end
 
@@ -132,16 +131,16 @@ SQL
     end
   end
 
-  error Isucon5::AuthenticationError do
+  error Isucon::AuthenticationError do
     session[:user_id] = nil
     halt 401, erubis(:login, layout: false, locals: { message: 'ログインに失敗しました' })
   end
 
-  error Isucon5::PermissionDenied do
+  error Isucon::PermissionDenied do
     halt 403, erubis(:error, locals: { message: '友人のみしかアクセスできません' })
   end
 
-  error Isucon5::ContentNotFound do
+  error Isucon::ContentNotFound do
     halt 404, erubis(:error, locals: { message: '要求されたコンテンツは存在しません' })
   end
 
@@ -247,7 +246,7 @@ SQL
   post '/profile/:account_name' do
     authenticated!
     if params['account_name'] != current_user[:account_name]
-      raise Isucon5::PermissionDenied
+      raise Isucon::PermissionDenied
     end
     args = [params['first_name'], params['last_name'], params['sex'], params['birthday'], params['pref']]
 
@@ -286,12 +285,12 @@ SQL
   get '/diary/entry/:entry_id' do
     authenticated!
     entry = db.xquery('SELECT * FROM entries WHERE id = ?', params['entry_id']).first
-    raise Isucon5::ContentNotFound unless entry
+    raise Isucon::ContentNotFound unless entry
     entry[:title], entry[:content] = entry[:body].split(/\n/, 2)
     entry[:is_private] = (entry[:private] == 1)
     owner = get_user(entry[:user_id])
     if entry[:is_private] && !permitted?(owner[:id])
-      raise Isucon5::PermissionDenied
+      raise Isucon::PermissionDenied
     end
     comments = db.xquery('SELECT * FROM comments WHERE entry_id = ?', entry[:id])
     mark_footprint(owner[:id])
@@ -310,11 +309,11 @@ SQL
     authenticated!
     entry = db.xquery('SELECT * FROM entries WHERE id = ?', params['entry_id']).first
     unless entry
-      raise Isucon5::ContentNotFound
+      raise Isucon::ContentNotFound
     end
     entry[:is_private] = (entry[:private] == 1)
     if entry[:is_private] && !permitted?(entry[:user_id])
-      raise Isucon5::PermissionDenied
+      raise Isucon::PermissionDenied
     end
     query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)'
     db.xquery(query, entry[:id], current_user[:id], params['comment'])
@@ -335,34 +334,41 @@ SQL
     erb :footprints, locals: { footprints: footprints }
   end
 
-  get '/friends' do
+  get '/timeline' do
     authenticated!
-    query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC'
-    friends = {}
-    db.xquery(query, current_user[:id], current_user[:id]).each do |rel|
-      key = (rel[:one] == current_user[:id] ? :another : :one)
-      friends[rel[key]] ||= rel[:created_at]
+    entry = db.xquery('SELECT * FROM entries WHERE id = ?', params['entry_id']).first
+    raise Isucon::ContentNotFound unless entry
+    entry[:title], entry[:content] = entry[:body].split(/\n/, 2)
+    entry[:is_private] = (entry[:private] == 1)
+    owner = get_user(entry[:user_id])
+    if entry[:is_private] && !permitted?(owner[:id])
+      raise Isucon::PermissionDenied
     end
-    list = friends.map{|user_id, created_at| [user_id, created_at]}
-    erb :friends, locals: { friends: list }
+    comments = db.xquery('SELECT * FROM comments WHERE entry_id = ?', entry[:id])
+    mark_footprint(owner[:id])
+    erb :entry, locals: { owner: owner, entry: entry, comments: comments }
   end
 
-  post '/friends/:account_name' do
+  get '/timeline' do
     authenticated!
-    unless is_friend_account?(params['account_name'])
-      user = user_from_account(params['account_name'])
-      unless user
-        raise Isucon5::ContentNotFound
-      end
-      db.xquery('INSERT INTO relations (one, another) VALUES (?,?), (?,?)', current_user[:id], user[:id], user[:id], current_user[:id])
-      redirect '/friends'
-    end
+
+    self_tweets = []
+    tweets = db.xquery('SELECT * FROM tweets WHERE user_id = ? ORDER BY created_at DESC', current_user[:id])
+
+    follow_tweets = []
+
+    erb :timeline, locals: { tweets: tweets}
+
+  end
+
+  post '/tweet' do
+    authenticated!
+    query = 'INSERT INTO tweets (user_id, content) VALUES (?,?)'
+    db.xquery(query, current_user[:id], params['content'])
+    redirect "/timeline"
   end
 
   get '/initialize' do
-    db.query("DELETE FROM relations WHERE id > 500000")
-    db.query("DELETE FROM footprints WHERE id > 500000")
-    db.query("DELETE FROM entries WHERE id > 500000")
-    db.query("DELETE FROM comments WHERE id > 1500000")
+    # TODO: DB初期化スクリプトを叩く
   end
 end

@@ -1,0 +1,18 @@
+<h2>タイムライン</h2>
+<div class="row panel panel-primary" id="entry-comments">
+  <% tweets.each do |tweets| %>
+  <div class="comment">
+    <% tweet_user = get_user(tweets[:user_id]) %>
+    <div class="owner">
+      <!-- 時間があれば実装する -->
+      <!--<a href="/user/<%= comment_user[:id] %>"><%= comment_user[:name] %>さん</a>-->
+    </div>
+    <div class="tweet">
+      <% tweets[:content].split(/\n/).each do |line| %>
+      <%= line %><br />
+      <% end %>
+    </div>
+    <div class="comment-created-at">投稿時刻:<%= tweets[:created_at] %></div>
+  </div>
+  <% end %>
+</div>

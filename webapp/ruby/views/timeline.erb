@@ -3,11 +3,11 @@
   <% tweets.each do |tweets| %>
   <div class="comment">
     <% tweet_user = get_user(tweets[:user_id]) %>
-    <div class="owner">
-      <!-- 時間があれば実装する -->
-      <!--<a href="/user/<%= comment_user[:id] %>"><%= comment_user[:name] %>さん</a>-->
+    <div class="user">
+      <a href="/user/<%= tweet_user[:id] %>"><%= tweet_user[:name] %></a>
     </div>
     <div class="tweet">
+      <!-- TODO: ユーザアイコン -->
       <% tweets[:content].split(/\n/).each do |line| %>
       <%= line %><br />
       <% end %>

@@ -12,7 +12,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test",
   "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
-  "io.spray" %%  "spray-json" % "1.3.2"
+  "io.spray" %%  "spray-json" % "1.3.2",
+  "org.scalaj" %% "scalaj-http" % "2.2.0"
 )
 
 initialCommands := "import com.github.takashabe.isucon_internal._"

@@ -1,22 +1,32 @@
 package com.github.takashabe.isucon_internal
 
+import com.github.takashabe.isucon_internal.ResponseType._
+
 class Result(
-              valid: Boolean,
-              response: Response,
-              requests: Long,
-              var elapsed_time: Long,
-              var done: String,
-              var violations: List[Violation]) {
+  valid: Boolean,
+  response: Responses,
+  var requests: Long,
+  var elapsed_time: Long,
+  var done: String,
+  var violations: List[Violation])
+{
   def this() {
-    this(valid = true, requests = 0, elapsed_time = 0, done = "", response = new Response)
+    this(valid = true, requests = 0, elapsed_time = 0, done = "", response = new Responses, violations = List[Violation]())
   }
 
-  def addResponse(r: Response): Unit = {
-    response.success += r.success
-    response.redirect += r.redirect
-    response.failure += r.failure
-    response.error += r.error
-    response.timeout += r.timeout
+  def addResponse(r: ResponseType): Unit = {
+    requests += 1
+    r match {
+      case SUCCESS => response.success += 1
+      case REDIRECT => response.redirect += 1
+      case FAILURE => response.failure += 1
+      case ERROR => response.error += 1
+      case TIMEOUT => response.timeout += 1
+    }
+  }
+
+  def addViolation(requestType: String, description: String): Unit = {
+    new Violation(requestType, description, 0) :: violations
   }
 }
 
@@ -29,7 +39,13 @@ class Result(
   * @param error 5xx
   * @param timeout リクエストタイムアウト
   */
-case class Response(success: Long, redirect: Long, failure: Long, error: Long, timeout: Long) {
+case class Responses(
+  var success: Long,
+  var redirect: Long,
+  var failure: Long,
+  var error: Long,
+  var timeout: Long)
+{
   def this() {
     this(0, 0, 0, 0, 0)
   }

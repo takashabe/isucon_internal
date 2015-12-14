@@ -3,14 +3,22 @@ package com.github.takashabe.isucon_internal
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+import scalaj.http._
+
+/**
+  * 複数Scenarioを管理する
+  */
+class ScenarioManager {
+}
+
 /**
   * 1シナリオを表す
   */
-abstract class Scenario {
-  var started_at: LocalDateTime
-  var stored_result: Result
-  var config: Config
-  var state: State
+class Scenario {
+  var started_at: LocalDateTime = _
+  var stored_result: Result = _
+  var config: Config = _
+  var state: State = _
 
   val BlockInterval = 3
 
@@ -18,7 +26,9 @@ abstract class Scenario {
     * 実際にシナリオでチェックすべき項目を書く
     * @param sessions シナリオで使用するセッション
     */
-  def scenario(sessions: List[Session])
+  def scenario(sessions: List[Session]): Unit = {
+    throw new AbstractMethodError
+  }
 
   /**
     * シナリオ実行後にResultを返す
@@ -70,20 +80,61 @@ abstract class Scenario {
     }
   }
 
-  def getAndCheck(session: Session, path: String, value: Null, b: Boolean, value1: Null, value2: Null): Unit = {
-
+  def get(session: Session, path: String): Unit = {
+    getAndCheck(session, path, null, null)
   }
 
-  def get(session: Session, path: String): Unit = {
-    getAndCheck(session, path, null, b = false, null, null)
+  def getAndCheck(
+     session: Session,
+     path: String,
+     requestType: String,
+     checkerCallback: Checker => Unit): Unit =
+  {
+    val response = Http(path)
+      .timeout(connTimeoutMs = 1000, readTimeoutMs = config.GetTimeout)
+      .asString
+
+    // レスポンス数を加算
+    if (response.is2xx) {
+      stored_result.addResponse(ResponseType.SUCCESS)
+    } else if (response.is3xx) {
+      stored_result.addResponse(ResponseType.REDIRECT)
+    } else if (response.is4xx) {
+      stored_result.addResponse(ResponseType.FAILURE)
+    } else {
+      stored_result.addResponse(ResponseType.ERROR)
+    }
+
+    // Checkerコールバックの実行
+    val checker = new Checker(stored_result, requestType, path, config, response)
+    checkerCallback(checker)
   }
 }
 
 /**
   * Scenarioで使用するためのassert群
   */
-abstract class Checker {
-  def scenario(scenario: Scenario)
+class Checker(
+  result: Result,
+  requestType: String,
+  path: String,
+  config: Config,
+  responseTime: Long,
+  response: HttpResponse[String]) extends Scenario
+{
+  def this(result: Result, requestType: String, path: String, config: Config, response: HttpResponse[String]) {
+    this(result, requestType, path, config, 0, response)
+  }
+
+  def addViolation(description: String): Unit = {
+    result.addViolation(requestType, description)
+  }
+
+  def isStatus(code: Int): Unit = {
+    if (response.code != code) {
+      this.addViolation("パス '%s' へのレスポンスコード %d が期待されていましたが %d でした".format(path, response.code, code))
+    }
+  }
 }
 
 /**
@@ -97,6 +148,10 @@ class Session {
   * シナリオの実行状態
   */
 class State(var running: Boolean = true) {
+  def init(): Unit = {
+    running = true
+  }
+
   def isRunning(): Boolean = {
     running
   }

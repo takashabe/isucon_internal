@@ -3,7 +3,13 @@ package com.github.takashabe.isucon_internal
 /**
   * ベンチマーク対象の設定を管理する
   */
-class Config(scheme: String, host: String, port: Int, agent: String, runningTime: Int) {
+class Config(
+  val scheme: String,
+  val host: String,
+  port: Int,
+  agent: String,
+  runningTime: Int)
+{
   val MaxRunningTime: Int = 3 * 60 * 1000
 
   // GET/POSTリクエストのタイムアウト値

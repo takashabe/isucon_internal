@@ -14,7 +14,8 @@ libraryDependencies ++= Seq(
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
   "io.spray" %%  "spray-json" % "1.3.2",
   "org.scalaj" %% "scalaj-http" % "2.2.0",
-  "org.jsoup" % "jsoup" % "1.8.3"
+  "org.jsoup" % "jsoup" % "1.8.3",
+  "com.github.scopt" %% "scopt" % "3.3.0"
 )
 
 initialCommands := "import com.github.takashabe.isucon_internal._"

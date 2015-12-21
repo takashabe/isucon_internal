@@ -5,15 +5,15 @@ package com.github.takashabe.isucon_internal
   */
 object App {
   def main(args: Array[String]): Unit = {
+    // CLIパース
     val cliParser = new CliParser
     val cliOption = cliParser.parse(args)
 
-    // TODO: JSONとクラス文字列から動的にParameterインスタンスを生成する
-    val parameter = new Parameter()
-    val param = parameter.generate("com.github.takashabe.isucon_internal.IsuconBenchUserSchema", "Alice", "alice@example.com")
+    // ベンチ用パラメータを取得
+    val parameter = new Parameter
+    val benchParameter = parameter.generate("/param.json")
 
-    println(parameter)
-    println(param)
+    println(benchParameter)
 
     // TODO: ScenarioManagerのキック
   }

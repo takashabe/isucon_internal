@@ -1,27 +1,33 @@
 package com.github.takashabe.isucon_internal
 
-import scala.reflect.runtime.universe._
+import java.io._
 
-import spray.json._
-import spray.json.DefaultJsonProtocol._
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 /**
   * パラメータJSONをマッピングするためのクラス
   */
-case class IsuconBenchUserSchema(name: String, email: String) extends Parameter
+case class UserSchemas(parameters: List[UserSchema])
+case class UserSchema(name: String, email: String)
 
 /**
   * マッピングクラスと他クラスとのインタフェースを提供する
   */
 class Parameter {
-  def generate(className: String, args: Any*): Parameter = {
-    // リフレクションでSchemaインスタンスを生成して返す
-    val mirror = scala.reflect.runtime.currentMirror
-    val classSymbol = mirror.staticClass(className)
-    val classMirror = mirror.reflectClass(classSymbol)
-    val constructorSymbol = classSymbol.typeSignature.decl(termNames.CONSTRUCTOR).asMethod
-    val constructorMethodMirror = classMirror.reflectConstructor(constructorSymbol)
+  def generate(path: String): List[UserSchema] = {
+    // パラメータJSONの読み込み
+    val reader = new BufferedReader(new InputStreamReader(getClass.getResourceAsStream(path), "UTF-8"))
+    val list = try {
+      Iterator.continually(reader.readLine()).takeWhile(_ != null).toList
+    } finally {
+      reader.close()
+    }
 
-    constructorMethodMirror(args: _*).asInstanceOf[Parameter]
+    // パラメータJSONをcase classにマッピングする
+    implicit val defaultFormat = DefaultFormats
+    val json = list.mkString("")
+    val userSchemas = parse(json).extract[UserSchemas]
+    userSchemas.parameters
   }
 }

@@ -378,13 +378,6 @@ class Checker(
 }
 
 /**
-  * セッションを使い回すためにクラス化
-  */
-class Session {
-
-}
-
-/**
   * シナリオの実行状態
   */
 class State(var running: Boolean = true) {

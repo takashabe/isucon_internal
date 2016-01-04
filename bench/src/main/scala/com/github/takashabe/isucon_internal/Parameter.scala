@@ -8,8 +8,8 @@ import org.json4s.native.JsonMethods._
 /**
   * パラメータJSONをマッピングするためのクラス
   */
+case class UserSchema(name: String, email: String, password: String) extends Parameter
 case class UserSchemas(parameters: List[UserSchema])
-case class UserSchema(name: String, email: String)
 
 /**
   * マッピングクラスと他クラスとのインタフェースを提供する

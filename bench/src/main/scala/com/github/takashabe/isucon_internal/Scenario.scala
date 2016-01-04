@@ -164,6 +164,11 @@ class Scenario {
 }
 
 /**
+  * シナリオ中に期待するレスポンスが帰ってこなかった
+  */
+class ScenarioAbortException extends RuntimeException
+
+/**
   * Scenarioで使用するためのassert群
   */
 class Checker(
@@ -180,6 +185,15 @@ class Checker(
 
   def document(): Document = {
     Jsoup.parse(response.body)
+  }
+
+  def hasViolation: Boolean = {
+    result.violations.nonEmpty
+  }
+
+  def fatal(message: String): Unit = {
+    addViolation(message)
+    throw new ScenarioAbortException
   }
 
   /**

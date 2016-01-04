@@ -90,16 +90,59 @@ class Scenario {
     getAndCheck(session, path, null, null)
   }
 
+  /**
+    * GETリクエストでCheckerを走らせる
+    *
+    * @param session リクエストに使うSession
+    * @param path リクエスト先URI
+    * @param requestType リクエスト種別
+    * @param checkerCallback Checker本体
+    */
   def getAndCheck(
      session: Session,
      path: String,
      requestType: String,
      checkerCallback: Checker => Unit): Unit =
   {
-    val response = Http(path)
+    val req = Http(path)
       .timeout(connTimeoutMs = 1000, readTimeoutMs = config.GetTimeout)
       .cookies(session.getCookies)
-      .asString
+
+    requestAndCheck(req, session, path, requestType, checkerCallback)
+  }
+
+  /**
+    * POSTリクエストでCheckerを走らせる
+    *
+    * @param session リクエストに使うSession
+    * @param path リクエスト先URI
+    * @param params POSTパラメータ
+    * @param requestType リクエスト種別
+    * @param checkerCallback Checker本体
+    */
+  def postAndCheck(
+     session: Session,
+     path: String,
+     params: Seq[(String, String)],
+     requestType: String,
+     checkerCallback: Checker => Unit): Unit =
+  {
+    val req = Http(path)
+      .timeout(connTimeoutMs = 1000, readTimeoutMs = config.GetTimeout)
+      .cookies(session.getCookies)
+      .postForm(params)
+
+    requestAndCheck(req, session, path, requestType, checkerCallback)
+  }
+
+  def requestAndCheck(
+    request: HttpRequest,
+    session: Session,
+    path: String,
+    requestType: String,
+    checkerCallback: Checker => Unit): Unit =
+  {
+    val response = request.asString
 
     // レスポンス数を加算
     if (response.is2xx) {

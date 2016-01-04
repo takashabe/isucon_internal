@@ -98,6 +98,7 @@ class Scenario {
   {
     val response = Http(path)
       .timeout(connTimeoutMs = 1000, readTimeoutMs = config.GetTimeout)
+      .cookies(session.getCookies)
       .asString
 
     // レスポンス数を加算
@@ -114,6 +115,8 @@ class Scenario {
     // Checkerコールバックの実行
     val checker = new Checker(stored_result, requestType, path, config, response)
     checkerCallback(checker)
+
+    session.updateCookieWithResponse(response.cookies)
   }
 }
 

@@ -1,14 +1,19 @@
 {
   "parameters": [
     {
-      "name":"Alice",
+      "name":"alice",
       "email":"alice@example.com",
-      "password":"alicepw"
+      "password":"alice"
     },
     {
-      "name":"Bob",
+      "name":"bob",
       "email":"bob@example.com",
-      "password":"bobpw"
+      "password":"bob"
+    },
+    {
+      "name":"mark",
+      "email":"mark@example.com",
+      "password":"mark"
     }
   ]
 }

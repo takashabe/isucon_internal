@@ -1,14 +1,15 @@
 package com.github.takashabe.isucon_internal
 
 import com.github.takashabe.isucon_internal.ResponseType._
+import com.typesafe.scalalogging.LazyLogging
 
-class Result(
+class Result (
   valid: Boolean,
   response: Responses,
   var requests: Long,
   var elapsed_time: Long,
   var done: String,
-  var violations: List[Violation])
+  var violations: List[Violation]) extends LazyLogging
 {
   def this() {
     this(valid = true, requests = 0, elapsed_time = 0, done = "", response = new Responses, violations = List[Violation]())
@@ -26,7 +27,7 @@ class Result(
   }
 
   def addViolation(requestType: String, description: String): Unit = {
-    new Violation(requestType, description, 0) :: violations
+    violations = new Violation(requestType, description, 0) :: violations
   }
 }
 
@@ -58,4 +59,8 @@ case class Responses(
   * @param description 違反原因の詳細
   * @param number 違反数
   */
-class Violation(requestType: String, description: String, number: Long)
+class Violation(requestType: String, description: String, number: Long) {
+  override def toString(): String = {
+    "requesttype:%s, description:%s, num:%d".format(requestType, description, number)
+  }
+}

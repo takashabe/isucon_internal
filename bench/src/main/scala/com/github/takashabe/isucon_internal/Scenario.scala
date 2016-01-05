@@ -4,6 +4,8 @@ import java.net.{URI, URISyntaxException}
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+import com.github.takashabe.isucon_internal.scenario.Bootstrap
+import com.typesafe.scalalogging.LazyLogging
 import org.jsoup.Jsoup
 import org.jsoup.nodes._
 
@@ -14,13 +16,37 @@ import scalaj.http._
 /**
   * 複数Scenarioを管理する
   */
-class ScenarioManager {
+class ScenarioManager extends LazyLogging {
+  /**
+    * ParameterのリストからSessionのリストを生成する
+    *
+    * @param params Parameterのリスト
+    * @return Sessionのリスト
+    */
+  def createSession(params: List[Parameter]): List[Session] = {
+    params.map(p => new Session(p))
+  }
+
+  /**
+    * Scenarioを実行する
+    *
+    * @param params Parameterのリスト
+    */
+  def run(params: List[Parameter]): Unit = {
+    // TODO どのクラスを実行するか選択可能にする
+    val checker = new Bootstrap
+    val sessions = createSession(params)
+    val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
+
+    val result = checker.execute(config, sessions)
+    logger.info(result.toString)
+  }
 }
 
 /**
   * 1シナリオを表す
   */
-class Scenario {
+class Scenario extends LazyLogging {
   var started_at: LocalDateTime = _
   var stored_result: Result = _
   var config: Config = _
@@ -48,6 +74,12 @@ class Scenario {
 
   def execute(config: Config, sessions: List[Session]): Result = {
     this.config = config
+    initExecute()
+    try {
+      scenario(sessions)
+    } catch {
+      case e: ScenarioAbortException => logger.info(e.toString)
+    }
     finishHook(stored_result)
   }
 
@@ -104,7 +136,7 @@ class Scenario {
      requestType: String,
      checkerCallback: Checker => Unit): Unit =
   {
-    val req = Http(path)
+    val req = Http(config.uri(path))
       .timeout(connTimeoutMs = 1000, readTimeoutMs = config.GetTimeout)
       .cookies(session.getCookies)
 
@@ -127,7 +159,7 @@ class Scenario {
      requestType: String,
      checkerCallback: Checker => Unit): Unit =
   {
-    val req = Http(path)
+    val req = Http(config.uri(path))
       .timeout(connTimeoutMs = 1000, readTimeoutMs = config.GetTimeout)
       .cookies(session.getCookies)
       .postForm(params)
@@ -143,6 +175,8 @@ class Scenario {
     checkerCallback: Checker => Unit): Unit =
   {
     val response = request.asString
+
+    logger.info("リクエスト種別:%s, URI:%s, ステータス:%d".format(requestType, path, response.code))
 
     // レスポンス数を加算
     if (response.is2xx) {
@@ -242,10 +276,14 @@ class Checker(
 
     // Locationヘッダがないものは認めない
     val location = response.location
+    logger.info("Locationヘッダ:%s".format(location.getOrElse("None")))
     location match {
       case Some(l) if l.equals(config.uri(path)) || l.equals(config.uriDefaultPort(path)) =>
         // OK
+        logger.info("リダイレクト先:%s".format(config.uri(path)))
         return
+      case Some(_) =>
+        // 次の判定に進む
       case None =>
         addViolation("Locationヘッダがありません")
         return

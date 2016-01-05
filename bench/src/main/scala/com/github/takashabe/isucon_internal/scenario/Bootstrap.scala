@@ -23,15 +23,31 @@ class Bootstrap extends Scenario {
     val session3 = sessions(2)
     val param3 = session.getParam.asInstanceOf[UserSchema]
 
-    // 2ndユーザでログイン出来るかどうか
+    // 2ndユーザでログイン試行した際にリダイレクトされるか
     {
-      getAndCheck(null, "/login", "LOGIN GET 2ND USER", (check) => {
+      getAndCheck(session2, "/login", "LOGIN GET 2ND USER", (check) => {
         check.isStatus(200)
       })
 
       val loginParams = Seq("email" -> param2.email, "password" -> param2.password)
 
       postAndCheck(session2, "/login", loginParams, "LOGIN POST 2ND USER", (check) => {
+        check.isRedirect("/")
+        if (check.hasViolation) {
+          check.fatal("ログイン操作に対して正しいレスポンスが返りませんでした")
+        }
+      })
+    }
+
+    // 3rdユーザでログイン試行した際にリダイレクトされるか
+    {
+      getAndCheck(session3, "/login", "LOGIN GET 3RD USER", (check) => {
+        check.isStatus(200)
+      })
+
+      val loginParams = Seq("email" -> param3.email, "password" -> param3.password)
+
+      postAndCheck(session3, "/login", loginParams, "LOGIN POST 3RD USER", (check) => {
         check.isRedirect("/")
         if (check.hasViolation) {
           check.fatal("ログイン操作に対して正しいレスポンスが返りませんでした")

@@ -39,7 +39,13 @@ class ScenarioManager extends LazyLogging {
     val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
 
     val result = checker.execute(config, sessions)
-    logger.info(result.toString)
+
+    result.valid match {
+      case true  => // Nothing
+      case false => result.violations.map {
+        v => logger.info(v.toString())
+      }
+    }
   }
 }
 
@@ -221,7 +227,7 @@ class Checker(
     Jsoup.parse(response.body)
   }
 
-  def hasViolation: Boolean = {
+  def hasViolations: Boolean = {
     result.violations.nonEmpty
   }
 
@@ -276,11 +282,9 @@ class Checker(
 
     // Locationヘッダがないものは認めない
     val location = response.location
-    logger.info("Locationヘッダ:%s".format(location.getOrElse("None")))
     location match {
       case Some(l) if l.equals(config.uri(path)) || l.equals(config.uriDefaultPort(path)) =>
         // OK
-        logger.info("リダイレクト先:%s".format(config.uri(path)))
         return
       case Some(_) =>
         // 次の判定に進む

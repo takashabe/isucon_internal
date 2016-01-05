@@ -4,30 +4,34 @@ import com.github.takashabe.isucon_internal.ResponseType._
 import com.typesafe.scalalogging.LazyLogging
 
 class Result (
-  valid: Boolean,
-  response: Responses,
+  var valid: Boolean,
+  val responses: Responses,
   var requests: Long,
   var elapsed_time: Long,
   var done: String,
   var violations: List[Violation]) extends LazyLogging
 {
   def this() {
-    this(valid = true, requests = 0, elapsed_time = 0, done = "", response = new Responses, violations = List[Violation]())
+    this(valid = true, requests = 0, elapsed_time = 0, done = "", responses = new Responses, violations = List[Violation]())
   }
 
   def addResponse(r: ResponseType): Unit = {
     requests += 1
     r match {
-      case SUCCESS => response.success += 1
-      case REDIRECT => response.redirect += 1
-      case FAILURE => response.failure += 1
-      case ERROR => response.error += 1
-      case TIMEOUT => response.timeout += 1
+      case SUCCESS => responses.success += 1
+      case REDIRECT => responses.redirect += 1
+      case FAILURE => responses.clientError += 1
+      case ERROR => responses.serverError += 1
+      case TIMEOUT => responses.exception += 1
     }
   }
 
   def addViolation(requestType: String, description: String): Unit = {
     violations = new Violation(requestType, description, 0) :: violations
+  }
+
+  def fail: Unit = {
+    valid = false
   }
 }
 
@@ -36,16 +40,16 @@ class Result (
   *
   * @param success 2xx
   * @param redirect 3xx
-  * @param failure 4xx
-  * @param error 5xx
-  * @param timeout リクエストタイムアウト
+  * @param clientError 4xx
+  * @param serverError 5xx
+  * @param exception リクエスト不正(タイムアウトなど)
   */
 case class Responses(
   var success: Long,
   var redirect: Long,
-  var failure: Long,
-  var error: Long,
-  var timeout: Long)
+  var clientError: Long,
+  var serverError: Long,
+  var exception: Long)
 {
   def this() {
     this(0, 0, 0, 0, 0)

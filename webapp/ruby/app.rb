@@ -144,7 +144,7 @@ SQL
 
   post '/login' do
     authenticate params['email'], params['password']
-    redirect '/timeline'
+    redirect '/'
   end
 
   get '/logout' do
@@ -154,11 +154,6 @@ SQL
   end
 
   get '/' do
-    authenticated!
-    redirect '/timeline'
-  end
-
-  get '/timeline' do
     authenticated!
     tweets = []
     db.xquery('SELECT * FROM tweet ORDER BY created_at DESC').each do |row|
@@ -180,7 +175,7 @@ SQL
     authenticated!
     query = 'INSERT INTO tweet (user_id, content) VALUES (?,?)'
     db.xquery(query, current_user[:id], params['content'])
-    redirect "/timeline"
+    redirect "/"
   end
 
   get '/user/:user_id' do
@@ -191,7 +186,7 @@ SQL
   post '/follow/:user_id' do
     authenticated!
     db.xquery('INSERT INTO follow (user_id, follow_id) VALUES (?, ?)', current_user[:id], params['user_id'])
-    redirect "/timeline"
+    redirect "/"
   end
 
   get '/initialize' do

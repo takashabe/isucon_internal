@@ -155,7 +155,7 @@ SQL
 
   get '/' do
     authenticated!
-    redirect '/login'
+    redirect '/timeline'
   end
 
   get '/timeline' do

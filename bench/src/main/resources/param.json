@@ -2,11 +2,13 @@
   "parameters": [
     {
       "name":"Alice",
-      "email":"alice@example.com"
+      "email":"alice@example.com",
+      "password":"alicepw"
     },
     {
       "name":"Bob",
-      "email":"bob@example.com"
+      "email":"bob@example.com",
+      "password":"bobpw"
     }
   ]
 }

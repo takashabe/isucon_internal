@@ -263,7 +263,7 @@ class Checker(
     */
   def isStatus(code: Int): Unit = {
     if (response.code != code) {
-      addViolation("パス '%s' へのレスポンスコード %d が期待されていましたが %d でした".format(path, response.code, code))
+      addViolation("パス '%s' へのレスポンスコード %d が期待されていましたが %d でした".format(path, code, response.code))
     }
   }
 
@@ -329,7 +329,7 @@ class Checker(
     */
   def hasStyleSheet(expectedPath: String): Unit = {
     val es = document().head().getElementsByTag("link").asScala
-    if (!es.exists(p => p.attr("rel").equals("stylesheet") && p.attr("href").equals(expectedPath))) {
+    if (!es.exists(p => p.attr("rel") == "stylesheet" && p.attr("href") == expectedPath)) {
       addViolation("スタイルシートのパス %s への参照がありません".format(expectedPath))
     }
   }

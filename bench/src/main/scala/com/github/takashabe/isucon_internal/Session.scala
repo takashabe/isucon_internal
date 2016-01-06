@@ -2,11 +2,13 @@ package com.github.takashabe.isucon_internal
 
 import java.net.HttpCookie
 
+import com.typesafe.scalalogging.LazyLogging
+
 /**
   * HTTP Cookie、Parameterを扱う
   * 一連のシナリオ内で前回のレスポンスに含まれるCookieを再利用出来るようにする
   */
-class Session(param: Parameter) {
+class Session(param: Parameter) extends LazyLogging {
   var cookies: List[HttpCookie] = List()
 
   def getParam: Parameter = {
@@ -18,10 +20,14 @@ class Session(param: Parameter) {
     * @param compare Response
     */
   def updateCookieWithResponse(compare: IndexedSeq[HttpCookie]) = {
+    if (cookies.isEmpty) {
+      cookies = compare.toList
+    }
+
     for(compareCookie <- compare; localCookie <- cookies) {
       if(compareCookie.getName == localCookie.getName) {
         localCookie.setValue(compareCookie.getValue)
-        compareCookie :: cookies
+        cookies = compareCookie :: cookies
       }
     }
   }

@@ -1,5 +1,14 @@
 <h2>タイムライン</h2>
 <div class="row panel panel-primary" id="entry-comments">
+  <div class="col-md-4">
+    <dl>
+      <dt>name</dt><dd id="prof-account-name"><%= @user[:name] %></dd>
+      <dt>email</dt><dd id="prof-email"><%= @user[:email] %></dd>
+      <dt>following</dt><dd id="prof-following"><a href="/following"><%= following.size %></a></dd>
+      <dt>followers</dt><dd id="prof-followers"><a href="/followers"><%= followers.size %></a></dd>
+    </dl>
+  </div>
+
   <% tweets.each do |tweets| %>
   <div class="comment">
     <% tweet_user = get_user(tweets[:user_id]) %>

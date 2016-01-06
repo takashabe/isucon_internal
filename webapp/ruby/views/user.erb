@@ -1,11 +1,11 @@
 <h2><%= user[:name] %>さんのプロフィール</h2>
 <div class="row" id="prof">
   <dl class="panel panel-primary">
-    <dt>名前</dt><dd id="prof-account-name"><%= user[:name] %></dd>
-    <dt>メールアドレス</dt><dd id="prof-email"><%= user[:email] %></dd>
+    <dt>Name</dt><dd id="prof-account-name"><%= user[:name] %></dd>
+    <dt>Email</dt><dd id="prof-email"><%= user[:email] %></dd>
   </dl>
 </div>
-<% unless myself[:id] == user[:id] %>
+<% if myself[:id] != user[:id] and !is_follow?(user[:id]) %>
 <form method="POST" action="/follow/<%= user[:id] %>">
   <input type="hidden" name="self_user_id" value="<%= myself[:id] %>">
   <input type="submit" class="btn btn-default" value="フォローする" />

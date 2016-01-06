@@ -162,7 +162,10 @@ SQL
       break if tweets.size >= 100
     end
 
-    erb :timeline, locals: { tweets: tweets}
+    following = db.xquery('SELECT * FROM follow WHERE user_id = ?', current_user[:id])
+    followers = db.xquery('SELECT * FROM follow WHERE follow_id = ?', current_user[:id])
+
+    erb :timeline, locals: { tweets: tweets, following: following, followers: followers }
   end
 
   get '/tweet' do
@@ -183,10 +186,36 @@ SQL
     erb :user, locals: { user: user, myself: current_user}
   end
 
+  get '/following' do
+    authenticated!
+    following = db.xquery('SELECT * FROM follow WHERE user_id = ?', current_user[:id])
+    following_users = []
+    following.each do |f|
+      user = db.xquery('SELECT * FROM user WHERE id = ?', f[:follow_id]).first
+
+      following_users << user
+    end
+
+    erb :following, locals: { following: following_users }
+  end
+
   post '/follow/:user_id' do
     authenticated!
     db.xquery('INSERT INTO follow (user_id, follow_id) VALUES (?, ?)', current_user[:id], params['user_id'])
     redirect "/"
+  end
+
+  get '/followers' do
+    authenticated!
+    followers = db.xquery('SELECT * FROM follow WHERE follow_id = ?', current_user[:id])
+    followers_users = []
+    followers.each do |f|
+      user = db.xquery('SELECT * FROM user WHERE id = ?', f[:user_id]).first
+
+      followers_users << user
+    end
+
+    erb :followers, locals: { followers: followers_users }
   end
 
   get '/initialize' do

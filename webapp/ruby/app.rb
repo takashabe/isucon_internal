@@ -165,7 +165,7 @@ SQL
     following = db.xquery('SELECT * FROM follow WHERE user_id = ?', current_user[:id])
     followers = db.xquery('SELECT * FROM follow WHERE follow_id = ?', current_user[:id])
 
-    erb :timeline, locals: { tweets: tweets, following: following, followers: followers }
+    erb :index , locals: { tweets: tweets, following: following, followers: followers }
   end
 
   get '/tweet' do

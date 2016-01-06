@@ -2,6 +2,8 @@ package com.github.takashabe.isucon_internal.scenario
 
 import com.github.takashabe.isucon_internal._
 
+import scala.util.Random
+
 /**
   * 初期コンテンツチェック
   */
@@ -26,10 +28,10 @@ class Bootstrap extends Scenario {
     val param = session.getParam.asInstanceOf[UserSchema]
 
     val session2 = sessions(1)
-    val param2 = session.getParam.asInstanceOf[UserSchema]
+    val param2 = session2.getParam.asInstanceOf[UserSchema]
 
     val session3 = sessions(2)
-    val param3 = session.getParam.asInstanceOf[UserSchema]
+    val param3 = session3.getParam.asInstanceOf[UserSchema]
 
     // 2ndユーザでログイン出来るか
     {
@@ -95,7 +97,7 @@ class Bootstrap extends Scenario {
       })
     }
 
-    // ログイン後indexページのコンテンツチェック
+    // 1stユーザでログイン後indexページのコンテンツチェック
     getAndCheck(session, "/", "INDEX AFTER LOGIN", (check) => {
       check.isStatus(200)
 
@@ -118,5 +120,60 @@ class Bootstrap extends Scenario {
         check.fatal("トップページが正しく表示されていません")
       }
     })
+
+    // スタイルシートが正しいか
+    getAndCheck(session, "/css/bootstrap.min.css", "STYLE SHEET CHECK", (check) => {
+      check.isStatus(200)
+      check.isContentLength(122540)
+      if (check.hasViolations) {
+        check.fatal("スタイルシートが取得できません")
+      }
+    })
+
+    // 2ndユーザでログイン後のindexページコンテンツチェック
+    getAndCheck(session2, "/", "INDEX AFTER LOGIN 2ND USER", (check) => {
+      check.isStatus(200)
+      check.hasStyleSheet("/css/bootstrap.min.css")
+      check.content("dd#prof-name", param2.name)
+
+      check.exist("dd#prof-email")
+    })
+
+    // 3rdユーザでログイン後のindexページコンテンツチェック
+    getAndCheck(session3, "/", "INDEX AFTER LOGIN 3RD USER", (check) => {
+        check.isStatus(200)
+        check.hasStyleSheet("/css/bootstrap.min.css")
+        check.content("dd#prof-name", param3.name)
+
+        check.exist("dd#prof-email")
+    })
+
+    // tweet後のリダイレクトが正しいか
+    {
+      val params = Seq("content" -> Random.nextInt(Integer.MAX_VALUE).toString)
+      postAndCheck(session, "/tweet", params, "POST NEW TWEET", (check) => {
+        check.isRedirect("/")
+      })
+    }
+
+    // 他ユーザのページを閲覧した際に内容が正しいか
+    {
+      val profPath = "/user/%d".format(param.id)
+      // フォロー済みのユーザページが正しいか
+      getAndCheck(session2, profPath, "PROFILE FROM FOLLOW USER", (check) => {
+        check.content("dd#prof-name", param.name)
+        check.content("dd#prof-email", param.email)
+
+        check.missing("form#follow-form")
+      })
+
+      // 未フォローのユーザページが正しいか
+      getAndCheck(session3, profPath, "PROFILE FROM NON-FOLLOW USER", (check) => {
+        check.content("dd#prof-name", param.name)
+        check.content("dd#prof-email", param.email)
+
+        check.exist("form#follow-form")
+      })
+    }
   }
 }

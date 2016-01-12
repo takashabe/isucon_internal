@@ -219,6 +219,6 @@ SQL
   end
 
   get '/initialize' do
-    # TODO: DB初期化スクリプトを叩く
+    `ruby ../tools/restore.rb`
   end
 end

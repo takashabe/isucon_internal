@@ -55,6 +55,7 @@ class Initializer
       follow_seed = (1..max_follow).to_a.shuffle
       query = 'INSERT INTO follow (user_id, follow_id) VALUES '
       (1..max_follow).each do |j|
+        break if j == max_follow
         query << "(#{i}, #{follow_seed[j]}),"
       end
       if 0 < max_follow

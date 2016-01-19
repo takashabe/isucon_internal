@@ -158,22 +158,31 @@ class Bootstrap extends Scenario {
 
     // 他ユーザのページを閲覧した際に内容が正しいか
     {
-      val profPath = "/user/%d".format(param.id)
       // フォロー済みのユーザページが正しいか
-      getAndCheck(session2, profPath, "PROFILE FROM FOLLOW USER", (check) => {
-        check.content("dd#prof-name", param.name)
-        check.content("dd#prof-email", param.email)
+      getAndCheck(session, "/user/%d".format(param3.id), "PROFILE FROM FOLLOW USER", (check) => {
+        check.content("dd#prof-name", param3.name)
+        check.content("dd#prof-email", param3.email)
 
         check.missing("form#follow-form")
       })
 
       // 未フォローのユーザページが正しいか
-      getAndCheck(session3, profPath, "PROFILE FROM NON-FOLLOW USER", (check) => {
-        check.content("dd#prof-name", param.name)
-        check.content("dd#prof-email", param.email)
+      getAndCheck(session, "/user/%d".format(param2.id), "PROFILE FROM NON-FOLLOW USER", (check) => {
+        check.content("dd#prof-name", param2.name)
+        check.content("dd#prof-email", param2.email)
 
         check.exist("form#follow-form")
       })
     }
+
+    // TODO: プロフィール変更テスト ※webapp側でuserテーブルにprofile入れる必要アリ
+
+    // TODO: フォローしていないがフォローされているユーザのuserページでツイートが表示されるかどうか
+
+    // TODO: フォローしたユーザがfollowingページに表示されるかどうか
+
+    // TODO: フォローしたユーザが呟いたツイートがindexに表示されるかどうか
+
+    // TODO: フォローされているユーザがfollowersページに表示されるかどうか
   }
 }

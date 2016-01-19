@@ -4,7 +4,7 @@ import java.net.{URI, URISyntaxException}
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-import com.github.takashabe.isucon_internal.scenario.Bootstrap
+import com.github.takashabe.isucon_internal.scenario._
 import com.typesafe.scalalogging.LazyLogging
 import org.jsoup.Jsoup
 import org.jsoup.nodes._
@@ -32,8 +32,7 @@ class ScenarioManager extends LazyLogging {
     */
   def orders(): List[Scenario] = {
     List(
-      new Bootstrap,
-      new Bootstrap,
+      new Init,
       new Bootstrap
     )
   }

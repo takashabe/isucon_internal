@@ -69,7 +69,7 @@ class Initializer
     tweet_seed = File.open(file_path).readlines
     tweet_seed.map { |s| s.chomp! }
     seed_size = tweet_seed.size
-    max_tweet = Random.rand(10000).to_i
+    max_tweet = Random.rand(1000).to_i
 
     # ランダムにtweetさせる
     cnt_users = @client.xquery('SELECT COUNT(0) as cnt FROM user').first

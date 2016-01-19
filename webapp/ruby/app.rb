@@ -217,6 +217,6 @@ SQL
   end
 
   get '/initialize' do
-    `ruby ../tools/restore.rb`
+    `/bin/sh ../tools/init.sh`
   end
 end

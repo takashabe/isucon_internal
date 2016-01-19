@@ -28,24 +28,33 @@ class ScenarioManager extends LazyLogging {
   }
 
   /**
+    * 複数Scenarioをどんな順番で実行するか定義する
+    */
+  def orders(): List[Scenario] = {
+    List(
+      new Bootstrap,
+      new Bootstrap,
+      new Bootstrap
+    )
+  }
+
+  /**
     * Scenarioを実行する
     *
     * @param params Parameterのリスト
     */
   def run(params: List[Parameter]): Unit = {
     // TODO どのクラスを実行するか選択可能にする
-    val checker = new Bootstrap
+    val scenarios = orders()
     val sessions = createSession(params)
     val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
 
-    val result = checker.execute(config, sessions)
+    val results = scenarios.map(s => s.execute(config, sessions))
 
-    result.valid match {
-      case true  => // Nothing
-      case false => result.violations.map {
-        v => logger.info(v.toString())
-      }
-    }
+    results.map(r => r.valid match {
+      case true  => // 正常終了
+      case false => r.violations.map(v => logger.debug(v.toString()))
+    })
   }
 }
 

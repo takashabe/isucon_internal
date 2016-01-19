@@ -156,10 +156,8 @@ SQL
   get '/' do
     authenticated!
     tweets = []
-    db.xquery('SELECT * FROM tweet ORDER BY created_at DESC').each do |row|
-      next unless is_follow?(row[:user_id]) || current_user[:id] == row[:user_id]
+    db.xquery('SELECT * FROM tweet WHERE USER_ID IN (SELECT follow_id FROM follow WHERE USER_ID=?) ORDER BY created_at DESC LIMIT 100', current_user[:id]).each do |row|
       tweets << row
-      break if tweets.size >= 100
     end
 
     following = db.xquery('SELECT * FROM follow WHERE user_id = ?', current_user[:id])

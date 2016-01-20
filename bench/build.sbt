@@ -17,7 +17,8 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % "2.11.2",
   "org.json4s" %% "json4s-native" % "3.3.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
-  "ch.qos.logback" % "logback-classic" % "1.1.3"
+  "ch.qos.logback" % "logback-classic" % "1.1.3",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.0"
 )
 
 initialCommands := "import com.github.takashabe.isucon_internal._"

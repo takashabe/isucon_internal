@@ -1,5 +1,7 @@
 package com.github.takashabe.isucon_internal
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.github.takashabe.isucon_internal.ResponseType._
 import com.typesafe.scalalogging.LazyLogging
 
@@ -9,10 +11,10 @@ class Result (
   var requests: Long,
   var elapsed_time: Long,
   var done: String,
-  var violations: List[Violation]) extends LazyLogging
+  var violations: List[Violation])
 {
   def this() {
-    this(valid = true, requests = 0, elapsed_time = 0, done = "", responses = new Responses, violations = List[Violation]())
+    this(valid = true, responses = new Responses, requests = 0, elapsed_time = 0, done = "", violations = List[Violation]())
   }
 
   def addResponse(r: ResponseType): Unit = {
@@ -45,6 +47,16 @@ class Result (
     valid = false
   }
 
+  /**
+    * ResultをJSON化して返す
+    */
+  def toJson(): String = {
+    val mapper = new ObjectMapper
+    mapper.registerModule(DefaultScalaModule)
+    mapper.writerWithDefaultPrettyPrinter().writeValueAsString(this)
+  }
+
+
   override def toString(): String = {
     "valid:%s, responses:%s, requests: %s, elapsed: %s, done: %s, violations: %s".format(
       valid, responses, requests, elapsed_time, done, violations
@@ -52,7 +64,7 @@ class Result (
   }
 }
 
-object Result extends LazyLogging {
+object Result {
   /**
     * Resultの結果を足した新たなResultを返す
     *

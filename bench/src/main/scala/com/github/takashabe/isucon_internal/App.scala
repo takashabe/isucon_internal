@@ -18,6 +18,8 @@ object App extends LazyLogging {
 
     // TODO: ScenarioManagerのキック
     val manager = new ScenarioManager
-    manager.run(benchParameter)
+    val result = manager.run(benchParameter)
+
+    logger.info(result.toJson())
   }
 }

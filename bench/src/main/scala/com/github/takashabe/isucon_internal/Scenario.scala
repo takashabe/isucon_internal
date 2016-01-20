@@ -44,7 +44,7 @@ class ScenarioManager extends LazyLogging {
     *
     * @param params Parameterのリスト
     */
-  def run(params: List[Parameter]): Unit = {
+  def run(params: List[Parameter]): Result = {
     // TODO どのクラスを実行するか選択可能にする
     val scenarios = orders()
     val sessions = createSession(params)
@@ -58,7 +58,9 @@ class ScenarioManager extends LazyLogging {
       case false => // r.violations.map(v => logger.debug(v.toString()))
     })
     logger.debug("Merge結果 = ")
-    logger.debug(mergeResult.toString)
+    logger.debug(mergeResult.toString())
+
+    mergeResult
   }
 }
 

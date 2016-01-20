@@ -34,8 +34,7 @@ class ScenarioManager extends LazyLogging {
     List(
       new Init,
       new Bootstrap,
-      new Init,
-      new Bootstrap
+      new Load
     )
   }
 
@@ -143,6 +142,10 @@ class Scenario extends LazyLogging {
     getAndCheck(session, path, null, null)
   }
 
+  def post(session: Session, path: String, params: Seq[(String, String)]): Unit = {
+    postAndCheck(session, path, params, null, null)
+  }
+
   /**
     * GETリクエストでCheckerを走らせる
     *
@@ -211,8 +214,10 @@ class Scenario extends LazyLogging {
     }
 
     // Checkerコールバックの実行
-    val checker = new Checker(stored_result, requestType, path, config, response)
-    checkerCallback(checker)
+    if (checkerCallback != null) {
+      val checker = new Checker(stored_result, requestType, path, config, response)
+      checkerCallback(checker)
+    }
 
     session.updateCookieWithResponse(response.cookies)
   }

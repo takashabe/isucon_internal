@@ -26,12 +26,98 @@ class Result (
     }
   }
 
+  /**
+    * 違反情報を追加する。追加する際に既存と同じ違反であれば回数をインクリメントする
+    *
+    * @param requestType
+    * @param description
+    */
   def addViolation(requestType: String, description: String): Unit = {
-    violations = new Violation(requestType, description, 0) :: violations
+    val violationType = (requestType, description)
+    val vs = violations.collect {case v if v.getType() == violationType => v}
+    vs.isEmpty match {
+      case true  => violations = new Violation(requestType, description, 1) :: violations
+      case false => vs.foreach(v => v.number += 1)
+    }
   }
 
   def fail: Unit = {
     valid = false
+  }
+
+  override def toString(): String = {
+    "valid:%s, responses:%s, requests: %s, elapsed: %s, done: %s, violations: %s".format(
+      valid, responses, requests, elapsed_time, done, violations
+    )
+  }
+}
+
+object Result extends LazyLogging {
+  /**
+    * Resultの結果を足した新たなResultを返す
+    *
+    * @param results
+    * @return
+    */
+  def merge(results: List[Result]): Result = {
+    var valid = true
+    var requests = 0L
+    var elapsed = 0L
+    var res = new Responses()
+    var violations = List[Violation]()
+    for(r <- results) {
+      valid = valid && r.valid
+      elapsed += r.elapsed_time
+      requests += r.requests
+      res = mergeResponses(res, r.responses)
+      violations = updateViolations(violations, r.violations)
+    }
+    new Result(valid, res, requests, elapsed, "", violations)
+  }
+
+  /**
+    * Responses同士のパラメータを足した新たなResponsesを返す
+    *
+    * @param r1 Responses
+    * @param r2 Responses
+    * @return
+    */
+  def mergeResponses(r1: Responses, r2: Responses): Responses = {
+    new Responses(
+      r1.success + r2.success,
+      r1.redirect + r2.redirect,
+      r1.clientError + r2.clientError,
+      r1.serverError + r2.serverError,
+      r1.exception + r2.exception
+    )
+  }
+
+  /**
+    * 同一の違反情報があるものをまとめ、数をカウントする
+    * @param origin Violations
+    * @param compare Violations
+    * @return
+    */
+  def updateViolations(origin: List[Violation], compare: List[Violation]): List[Violation] = {
+    // 両方に存在するものを返り値に寄せて返す
+    var res = origin
+    for (c <- compare) {
+      if (res.isEmpty) {
+        res = c :: res
+      } else {
+        var notfound = true
+        for (r <- res) {
+          if (c.getType() == r.getType()) {
+            r.number += 1
+            notfound = false
+          }
+        }
+        if (notfound) {
+          res = c :: res
+        }
+      }
+    }
+    res
   }
 }
 
@@ -63,8 +149,13 @@ case class Responses(
   * @param description 違反原因の詳細
   * @param number 違反数
   */
-class Violation(requestType: String, description: String, number: Long) {
+case class Violation(requestType: String, description: String, var number: Long) {
+  def getType(): (String, String) = {
+    (requestType, description)
+  }
+
   override def toString(): String = {
-    "requesttype:%s, description:%s, num:%d".format(requestType, description, number)
+    //"requesttype:%s, description:%s, num:%d".format(requestType, description, number)
+    "requesttype:%s, num:%d".format(requestType, number)
   }
 }

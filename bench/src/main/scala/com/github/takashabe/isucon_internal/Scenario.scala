@@ -33,6 +33,8 @@ class ScenarioManager extends LazyLogging {
   def orders(): List[Scenario] = {
     List(
       new Init,
+      new Bootstrap,
+      new Init,
       new Bootstrap
     )
   }
@@ -49,11 +51,14 @@ class ScenarioManager extends LazyLogging {
     val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
 
     val results = scenarios.map(s => s.execute(config, sessions))
+    val mergeResult = Result.merge(results)
 
     results.map(r => r.valid match {
       case true  => // 正常終了
-      case false => r.violations.map(v => logger.debug(v.toString()))
+      case false => // r.violations.map(v => logger.debug(v.toString()))
     })
+    logger.debug("Merge結果 = ")
+    logger.debug(mergeResult.toString)
   }
 }
 

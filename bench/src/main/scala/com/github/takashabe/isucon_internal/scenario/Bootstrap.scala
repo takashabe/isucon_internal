@@ -189,7 +189,6 @@ class Bootstrap extends Scenario {
     {
       getAndCheck(session, "/logout", "LOGOUT 1ST USER", (check) => {
         check.isRedirect("/login")
-        check.isRedirect("/")
       })
 
       getAndCheck(session, "/", "INDEX AFTER LOGOUT", (check) => {

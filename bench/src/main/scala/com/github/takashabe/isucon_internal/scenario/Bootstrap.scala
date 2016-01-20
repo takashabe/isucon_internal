@@ -75,14 +75,14 @@ class Bootstrap extends Scenario {
 
     // ログインフォームの表示が正しいか
     getAndCheck(session, "/login", "LOGIN PAGE", (check) => {
-        check.isStatus(200)
+      check.isStatus(200)
 
-        check.someExist("form input[type=text]", 1)
-        check.someExist("form input[type=password]", 1)
-        check.someExist("form input[type=submit]", 1)
-        if (check.hasViolations) {
-          check.fatal("ログインフォームが正常に表示されていません")
-        }
+      check.someExist("form input[type=text]", 1)
+      check.someExist("form input[type=password]", 1)
+      check.someExist("form input[type=submit]", 1)
+      if (check.hasViolations) {
+        check.fatal("ログインフォームが正常に表示されていません")
+      }
     })
 
     // 1stユーザでログイン出来るか
@@ -141,9 +141,9 @@ class Bootstrap extends Scenario {
 
     // 3rdユーザでログイン後のindexページコンテンツチェック
     getAndCheck(session3, "/", "INDEX AFTER LOGIN 3RD USER", (check) => {
-        check.isStatus(200)
-        check.hasStyleSheet("/css/bootstrap.min.css")
-        check.content("dd#prof-name", param3.name)
+      check.isStatus(200)
+      check.hasStyleSheet("/css/bootstrap.min.css")
+      check.content("dd#prof-name", param3.name)
 
         check.exist("dd#prof-email")
     })
@@ -184,5 +184,17 @@ class Bootstrap extends Scenario {
     // TODO: フォローしたユーザが呟いたツイートがindexに表示されるかどうか
 
     // TODO: フォローされているユーザがfollowersページに表示されるかどうか
+
+    // ログアウト後、"/"のリダイレクトが正しいか
+    {
+      getAndCheck(session, "/logout", "LOGOUT 1ST USER", (check) => {
+        check.isRedirect("/login")
+        check.isRedirect("/")
+      })
+
+      getAndCheck(session, "/", "INDEX AFTER LOGOUT", (check) => {
+        check.isRedirect("/login")
+      })
+    }
   }
 }

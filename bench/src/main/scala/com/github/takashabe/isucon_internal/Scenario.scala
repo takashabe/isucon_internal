@@ -45,20 +45,13 @@ class ScenarioManager extends LazyLogging {
     * @param params Parameterのリスト
     */
   def run(params: List[Parameter]): Result = {
-    // TODO どのクラスを実行するか選択可能にする
     val scenarios = orders()
     val sessions = createSession(params)
     val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
 
+    // TODO: ordersの返り値を `List[List[Session]]` にして、akkaで並列に回せるようにする
     val results = scenarios.map(s => s.execute(config, sessions))
     val mergeResult = Result.merge(results)
-
-    results.map(r => r.valid match {
-      case true  => // 正常終了
-      case false => // r.violations.map(v => logger.debug(v.toString()))
-    })
-    logger.debug("Merge結果 = ")
-    logger.debug(mergeResult.toString())
 
     mergeResult
   }
@@ -220,7 +213,7 @@ class Scenario extends LazyLogging {
   {
     val response = request.asString
 
-    logger.info("リクエスト種別:%s, URI:%s, ステータス:%d".format(requestType, path, response.code))
+    logger.debug("リクエスト種別:%s, URI:%s, ステータス:%d".format(requestType, path, response.code))
 
     // レスポンス数を加算
     if (response.is2xx) {

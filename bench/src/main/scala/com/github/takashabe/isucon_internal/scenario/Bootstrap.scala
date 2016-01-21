@@ -22,8 +22,6 @@ class Bootstrap extends Scenario with ScenarioUtil {
     */
   override def scenario(sessions: List[Session]): Unit = {
     // 0..2    -> Bootstrap
-    // 3..9    -> Checker
-    // 10....  -> Load
     val session = sessions.head
     val param = session.getParam.asInstanceOf[UserSchema]
 

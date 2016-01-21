@@ -3,13 +3,25 @@ package com.github.takashabe.isucon_internal
 import java.net.{URI, URISyntaxException}
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import java.util.concurrent
+import java.util.concurrent.TimeUnit
 
+import akka.actor.Status.{Success, Failure}
+import akka.actor.{Props, ActorSystem, Actor}
+import akka.routing.RoundRobinPool
+import akka.util.Timeout
+import akka.pattern.ask
+import scala.concurrent.ExecutionContext.Implicits.global
 import com.github.takashabe.isucon_internal.scenario._
 import com.typesafe.scalalogging.LazyLogging
 import org.jsoup.Jsoup
 import org.jsoup.nodes._
 
+import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import scala.concurrent.{Future, Await}
+import scala.language.postfixOps
+import scala.util.Try
 import scala.util.matching.Regex
 import scalaj.http._
 
@@ -30,12 +42,11 @@ class ScenarioManager extends LazyLogging {
   /**
     * 複数Scenarioをどんな順番で実行するか定義する
     */
-  def orders(): List[Scenario] = {
+  def orders(): List[List[Scenario]] = {
     List(
-      new Init,
-      new Bootstrap,
-      new LoadChecker,
-      new Load
+      List(new Init),
+      List(new Bootstrap),
+      List(new Load, new Load, new Load, new LoadChecker)
     )
   }
 
@@ -49,11 +60,55 @@ class ScenarioManager extends LazyLogging {
     val sessions = createSession(params)
     val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
 
-    // TODO: ordersの返り値を `List[List[Session]]` にして、akkaで並列に回せるようにする
-    val results = scenarios.map(s => s.execute(config, sessions))
-    val mergeResult = Result.merge(results)
+    var doneResults = List[Result]()
+    for(step <- scenarios) {
+//      // 同期Ver
+//      val results = step.map(s => s.execute(config, sessions))
+//      doneResults = Result.merge(results) :: doneResults
 
-    mergeResult
+      // 非同期Ver
+      val actorSystem = ActorSystem("Scenario")
+      val actor = actorSystem.actorOf(Props[ScenarioActor].withRouter(new RoundRobinPool(step.size)))
+      var sends = List[Future[Any]]()
+      implicit val timeout = Timeout(10 seconds)
+
+      try {
+        for (s <- step.zipWithIndex) {
+          // セッションを切り出す
+          // TODO: セッションとシナリオの関係に依存しているので隠蔽したい…
+          val collectSessions = if (step.size > 1) sessions.drop(3) else sessions.take(3)
+          val scenario = s._1
+          val index = s._2
+          val useSessionSize = collectSessions.size / step.size
+
+          // BootstrapとLoadで使うセッションを分ける
+          val useSession = if (step.size > 1) {
+            // Loadのセッションは各Loadで同じものを使わないようにする
+            collectSessions.slice(useSessionSize * index + 1, useSessionSize * (index + 1))
+          } else {
+            collectSessions
+          }
+          val f = actor ? ScenarioParam(scenario, useSession, config)
+          sends = f :: sends
+        }
+
+        val receiveResults = sends.map(s => Await.result(s, timeout.duration).asInstanceOf[Result])
+        doneResults = Result.merge(receiveResults) :: doneResults
+      } finally {
+        actorSystem.shutdown()
+      }
+    }
+    Result.merge(doneResults)
+  }
+}
+
+case class ScenarioParam(scenario: Scenario, sessions: List[Session], config: Config)
+
+class ScenarioActor extends Actor with LazyLogging {
+  def receive = {
+    case sp: ScenarioParam =>
+      val scenario = sp.scenario
+      sender ! scenario.execute(sp.config, sp.sessions)
   }
 }
 

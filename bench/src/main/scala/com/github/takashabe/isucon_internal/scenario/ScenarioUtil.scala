@@ -5,6 +5,8 @@ import com.github.takashabe.isucon_internal._
 import scala.util.Random
 
 trait ScenarioUtil {
+  val LoadDurationMills = 5L * 1000
+
   def getParam(session: Session): UserSchema = {
     session.getParam.asInstanceOf[UserSchema]
   }

@@ -11,32 +11,22 @@ import scala.util.Random
   * ガンガン負荷をかける系
   */
 class Load extends Scenario with ScenarioUtil {
-  // ベンチ時間 10秒
-  val DurationMillis = 10L * 1000
-
   /**
     * 実際にシナリオでチェックすべき項目を書く
     * @param sessions シナリオで使用するセッション
     */
   override def scenario(sessions: List[Session]): Unit = {
-    // 0..2    -> Bootstrap
-    // 3..9    -> LoadChecker
-    // 10....  -> Load
-
-    // セッションの取り出し
-    val loadSessions = sessions.drop(10)
-
     // 指定時間まで無限ループ
-    val stopAt = LocalDateTime.now().plus(DurationMillis, ChronoUnit.MILLIS)
+    val stopAt = LocalDateTime.now().plus(LoadDurationMills, ChronoUnit.MILLIS)
     while (true) {
       if (LocalDateTime.now().isAfter(stopAt)) {
         return
       }
 
       // 3セッションの選定(Random)
-      val s1 = sessions(Random.nextInt(loadSessions.size))
-      val s2 = sessions(Random.nextInt(loadSessions.size))
-      val s3 = sessions(Random.nextInt(loadSessions.size))
+      val s1 = sessions(Random.nextInt(sessions.size))
+      val s2 = sessions(Random.nextInt(sessions.size))
+      val s3 = sessions(Random.nextInt(sessions.size))
       if (LocalDateTime.now().isAfter(stopAt)) {
         return
       }

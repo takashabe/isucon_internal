@@ -34,6 +34,7 @@ class ScenarioManager extends LazyLogging {
     List(
       new Init,
       new Bootstrap,
+      new LoadChecker,
       new Load
     )
   }
@@ -146,6 +147,25 @@ class Scenario extends LazyLogging {
     postAndCheck(session, path, params, null, null)
   }
 
+  def getStatus(session: Session, path: String): Int = {
+    var code = 0
+    getAndCheck(session, path, "TO READ STATUS", (check) => {
+      code = check.getStatus()
+    })
+    code
+  }
+
+  def getAndRead(session: Session, path: String, selector: String, index: Int, getter: Element => String): String = {
+    var content = ""
+    getAndCheck(session, path, "TO READ NODE", check => {
+      val es = check.document().select(selector)
+      if (es.size() > index) {
+        content = getter(es.get(index))
+      }
+    })
+    content
+  }
+
   /**
     * GETリクエストでCheckerを走らせる
     *
@@ -241,6 +261,10 @@ class Checker(
 {
   def this(result: Result, requestType: String, path: String, config: Config, response: HttpResponse[String]) {
     this(result, requestType, path, config, 0, response)
+  }
+
+  def getStatus(): Int = {
+    response.code
   }
 
   def document(): Document = {

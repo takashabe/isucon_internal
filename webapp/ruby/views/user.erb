@@ -11,3 +11,17 @@
   <input type="submit" class="btn btn-default" value="フォローする" />
 </form>
 <% end %>
+<% tweets.each do |tweets| %>
+<div class="tweet">
+  <% tweet_user = get_user(tweets[:user_id]) %>
+  <div class="user">
+    <a href="/user/<%= tweet_user[:id] %>"><%= tweet_user[:name] %></a>
+  </div>
+  <div class="tweet">
+    <% tweets[:content].split(/\n/).each do |line| %>
+        <%= line %><br />
+    <% end %>
+  </div>
+  <div class="comment-created-at">投稿時刻:<%= tweets[:created_at] %></div>
+</div>
+<% end %>

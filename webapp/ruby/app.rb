@@ -9,7 +9,6 @@ require 'logger'
 
 module Isucon
   class AuthenticationError < StandardError; end
-  class PermissionDenied < StandardError; end
   class ContentNotFound < StandardError; end
   module TimeWithoutZone
     def to_s
@@ -99,28 +98,11 @@ SQL
       user
     end
 
-    def user_from_account(account_name)
-      user = db.xquery('SELECT * FROM users WHERE account_name = ?', account_name).first
-      raise Isucon::ContentNotFound unless user
-      user
-    end
-
-    def is_friend?(another_id)
-      user_id = session[:user_id]
-      query = 'SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)'
-      cnt = db.xquery(query, user_id, another_id, another_id, user_id).first[:cnt]
-      cnt.to_i > 0 ? true : false
-    end
-
     def is_follow?(follow_id)
       user_id = session[:user_id]
       query = 'SELECT COUNT(1) AS cnt FROM follow WHERE user_id = ? AND follow_id = ?'
       cnt = db.xquery(query, user_id, follow_id).first[:cnt]
       cnt.to_i > 0 ? true : false
-    end
-
-    def permitted?(another_id)
-      another_id == current_user[:id] || is_friend?(another_id)
     end
   end
 
@@ -129,17 +111,13 @@ SQL
     halt 401, erubis(:login, layout: false, locals: { message: 'ログインに失敗しました' })
   end
 
-  error Isucon::PermissionDenied do
-    halt 403, erubis(:error, locals: { message: '友人のみしかアクセスできません' })
-  end
-
   error Isucon::ContentNotFound do
     halt 404, erubis(:error, locals: { message: '要求されたコンテンツは存在しません' })
   end
 
   get '/login' do
     session.clear
-    erb :login, layout: false, locals: { message: '高負荷に耐えられるSNSコミュニティサイトへようこそ!' }
+    erb :login, layout: false, locals: { message: 'バルスでも落ちないツイッターへようこそ！' }
   end
 
   post '/login' do
@@ -180,8 +158,12 @@ SQL
   end
 
   get '/user/:user_id' do
-    user = db.xquery('SELECT * FROM user WHERE id = ?', params['user_id']).first
-    erb :user, locals: { user: user, myself: current_user}
+    authenticated!
+    user = get_user(params['user_id'])
+    raise Isucon::ContentNotFound unless user
+
+    tweets = db.xquery('SELECT * FROM tweet WHERE user_id = ? ORDER BY created_at DESC LIMIT 100', params['user_id'])
+    erb :user, locals: { user: user, tweets: tweets, myself: current_user}
   end
 
   get '/following' do

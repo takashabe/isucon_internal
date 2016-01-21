@@ -67,7 +67,7 @@ class LoadChecker extends Scenario with ScenarioUtil {
       }
 
       val s2followingPath = "/user/%s".format(p2.id)
-      val s2Name = getAndRead(s1, "/following", "#friends dl dd.friend-friend a[href=%s]".format(s2followingPath), 0, e => e.text())
+      val s2Name = getAndRead(s1, "/following", "#following dl dd.follow-follow a[href=%s]".format(s2followingPath), 0, e => e.text())
       s2Name.isEmpty match {
         case true =>
           // 未フォローなのでフォローしてみる
@@ -81,7 +81,7 @@ class LoadChecker extends Scenario with ScenarioUtil {
 
           getAndCheck(s1, "/following", "FOLLOWING LIST AFTER MAKING FOLLOW", check => {
             check.isStatus(200)
-            check.contentCheck("#friends dl dd.friend-friend a[href=%s]".format(s2followingPath), "フォローしたばかりのユーザが含まれていません", e => {
+            check.contentCheck("#following dl dd.follow-follow a[href=%s]".format(s2followingPath), "フォローしたばかりのユーザが含まれていません", e => {
               e.attr("href") == s2followingPath
             })
           })
@@ -99,7 +99,7 @@ class LoadChecker extends Scenario with ScenarioUtil {
 
           getAndCheck(s1, "/", "SEE FOLLOWING TWEET", check => {
             check.isStatus(200)
-            check.contentCheck("#entry-comments.row.panel.panel-primary div.comment div.tweet", "フォローしているユーザのツイートが含まれていません", e => {
+            check.contentCheck("#timeline.row.panel.panel-primary div.tweet div.tweet", "フォローしているユーザのツイートが含まれていません", e => {
               e.text() == tweet.head._2
             })
           })

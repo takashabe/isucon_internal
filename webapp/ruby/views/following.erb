@@ -1,8 +1,8 @@
 <h2>Following list</h2>
-<div class="row panel panel-primary" id="friends">
+<div class="row panel panel-primary" id="following">
   <dl>
     <% following.each do |f| %>
-    <dt class="friend-date"><%= f[:created_at] %></dt><dd class="friend-friend"><a href="/user/<%= f[:id] %>"><%= f[:name] %></a></dd>
+    <dt class="follow-date"><%= f[:created_at] %></dt><dd class="follow-follow"><a href="/user/<%= f[:id] %>"><%= f[:name] %></a></dd>
     <% end %>
   </dl>
 </div>

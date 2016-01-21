@@ -184,7 +184,7 @@ class Bootstrap extends Scenario with ScenarioUtil {
       val userPath = "/user/%s".format(param.id)
       getAndCheck(session2, "/following", "SEE 2ND USER FOLLOWING PAGE AFTER FOLLOW 1ST USER", check => {
         check.isStatus(200)
-        check.contentCheck("#friends dl dd.friend-friend a[href=%s]".format(userPath), "フォローしたばかりのユーザが含まれていません", e => {
+        check.contentCheck("#following dl dd.follow-follow a[href=%s]".format(userPath), "フォローしたばかりのユーザが含まれていません", e => {
           e.attr("href") == userPath
         })
       })
@@ -199,7 +199,7 @@ class Bootstrap extends Scenario with ScenarioUtil {
 
       getAndCheck(session2, "/", "SEE 2ND USER TIMELINE AFTER TWEET 1ST USER", check => {
         check.isStatus(200)
-        check.contentCheck("#entry-comments.row.panel.panel-primary div.comment div.tweet", "フォローしているユーザのツイートが含まれていません", e => {
+        check.contentCheck("#timeline.row.panel.panel-primary div.tweet div.tweet", "フォローしているユーザのツイートが含まれていません", e => {
           e.text() == tweet.head._2
         })
       })
@@ -211,7 +211,7 @@ class Bootstrap extends Scenario with ScenarioUtil {
     {
       getAndCheck(session, "/followers", "SEE 1ST USER FOLLOWERS PAGE AFTER FOLLOW FROM 2ND USER", check => {
         check.isStatus(200)
-        check.contentCheck("#friends.row.panel.panel-primary dl dd.friend-friend", "フォローされているユーザが含まれていません", e => {
+        check.contentCheck("#followers.row.panel.panel-primary dl dd.follow-follow", "フォローされているユーザが含まれていません", e => {
           e.text() == param2.name
         })
       })

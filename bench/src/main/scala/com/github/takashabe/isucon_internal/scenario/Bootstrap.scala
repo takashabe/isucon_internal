@@ -7,7 +7,7 @@ import scala.util.Random
 /**
   * 初期コンテンツチェック
   */
-class Bootstrap extends Scenario {
+class Bootstrap extends Scenario with ScenarioUtil {
   override def finishHook(result: Result): Result = {
     // Checkerレスポンスに不正や違反があれば失格
     if (result.responses.exception > 0 || result.violations.nonEmpty) {
@@ -177,13 +177,47 @@ class Bootstrap extends Scenario {
 
     // TODO: プロフィール変更テスト ※webapp側でuserテーブルにprofile入れる必要アリ
 
-    // TODO: フォローしていないがフォローされているユーザのuserページでツイートが表示されるかどうか
+    // 2ndユーザ -> 1stユーザをフォローして"/following"に1stユーザが表示されるかどうか
+    {
+      postAndCheck(session2, "/follow/%s".format(param.id), genTweet(), "POST FOLLOW", check => {
+        check.isRedirect("/")
+      })
 
-    // TODO: フォローしたユーザがfollowingページに表示されるかどうか
+      val userPath = "/user/%s".format(param.id)
+      getAndCheck(session2, "/following", "SEE 2ND USER FOLLOWING PAGE AFTER FOLLOW 1ST USER", check => {
+        check.isStatus(200)
+        check.contentCheck("#friends dl dd.friend-friend a[href=%s]".format(userPath), "フォローしたばかりのユーザが含まれていません", e => {
+          e.attr("href") == userPath
+        })
+      })
+    }
 
-    // TODO: フォローしたユーザが呟いたツイートがindexに表示されるかどうか
+    // 1stユーザがツイートして、それが2ndユーザの"/"に表示されるかどうか
+    {
+      val tweet = genTweet()
+      postAndCheck(session, "/tweet", tweet, "POST NEW TWEET", (check) => {
+        check.isRedirect("/")
+      })
 
-    // TODO: フォローされているユーザがfollowersページに表示されるかどうか
+      getAndCheck(session2, "/", "SEE 2ND USER TIMELINE AFTER TWEET 1ST USER", check => {
+        check.isStatus(200)
+        check.contentCheck("#entry-comments.row.panel.panel-primary div.comment div.tweet", "フォローしているユーザのツイートが含まれていません", e => {
+          e.text() == tweet.head._2
+        })
+      })
+    }
+
+    // TODO: フォローしていないがフォローされているユーザのuserページでツイートが表示されるかどうか ※"/user"ページにツイートを表示させる必要がある
+
+    // 1stユーザの"/followers"ページに2ndユーザが存在するかどうか
+    {
+      getAndCheck(session, "/followers", "SEE 1ST USER FOLLOWERS PAGE AFTER FOLLOW FROM 2ND USER", check => {
+        check.isStatus(200)
+        check.contentCheck("#friends.row.panel.panel-primary dl dd.friend-friend", "フォローされているユーザが含まれていません", e => {
+          e.text() == param2.name
+        })
+      })
+    }
 
     // ログアウト後、"/"のリダイレクトが正しいか
     {

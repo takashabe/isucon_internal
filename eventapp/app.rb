@@ -30,20 +30,20 @@ class Isucon5Portal::WebApp < Sinatra::Base
 
   IN_PROCESS_CACHE_TIMEOUT = 30
 
-  SATURDAY = [Time.parse("2015-09-26 08:00:00"), Time.parse("2015-09-26 19:00:00")]
-  SUNDAY   = [Time.parse("2015-09-27 08:00:00"), Time.parse("2015-09-27 18:00:00")]
-  SATURDAY_GAMETIME = [Time.parse("2015-09-26 11:00:00"), Time.parse("2015-09-26 19:00:00")]
-  SUNDAY_GAMETIME   = [Time.parse("2015-09-27 10:00:00"), Time.parse("2015-09-27 18:00:00")]
+  MONDAY           = [Time.parse("2016-01-25 08:00:00"), Time.parse("2016-01-25 18:00:00")]
+  TUESDAY          = [Time.parse("2016-01-26 08:00:00"), Time.parse("2016-01-26 18:00:00")]
+  MONDAY_GAMETIME  = [Time.parse("2016-01-25 14:00:00"), Time.parse("2016-01-25 18:00:00")]
+  TUESDAY_GAMETIME = [Time.parse("2016-01-26 14:00:00"), Time.parse("2016-01-26 18:00:00")]
 
   helpers do
     def config
       @config ||= {
         db: {
-          host: ENV['ISUCON5_DB_HOST'] || 'localhost',
-          port: ENV['ISUCON5_DB_PORT'] && ENV['ISUCON5_DB_PORT'].to_i,
-          username: ENV['ISUCON5_DB_USER'] || 'root',
-          password: ENV['ISUCON5_DB_PASSWORD'] || '',
-          database: ENV['ISUCON5_DB_NAME'] || 'isucon5portal',
+          host: ENV['ISUCON_DB_HOST'] || 'localhost',
+          port: ENV['ISUCON_DB_PORT'] && ENV['ISUCON_DB_PORT'].to_i,
+          username: ENV['ISUCON_DB_USER'] || 'root',
+          password: ENV['ISUCON_DB_PASSWORD'] || '',
+          database: ENV['ISUCON_DB_NAME'] || 'isucon_master',
         },
       }
     end
@@ -69,7 +69,7 @@ class Isucon5Portal::WebApp < Sinatra::Base
 
     def in_game_round_number(team)
       if is_organizer?(team)
-        if Time.now < SUNDAY.first
+        if Time.now < TUESDAY.first
           1
         else
           2
@@ -91,8 +91,8 @@ class Isucon5Portal::WebApp < Sinatra::Base
     def active_team?(team)
       now = Time.now
       case team[:round]
-      when 1 then SATURDAY.first < now && now < SATURDAY.last
-      when 2 then SUNDAY.first < now && now < SUNDAY.last
+      when 1 then MONDAY.first < now && now < MONDAY.last
+      when 2 then TUESDAY.first < now && now < TUESDAY.last
       when 0 then true
       end
     end
@@ -316,8 +316,6 @@ WHERE t.round = ? AND s.summary = 'success'
 SQL
     db.xquery(team_scores_query, current_round).each do |row|
       team_id = row[:team_id]
-      # SATURDAY_GAMETIME = [Time.parse("2015-09-26 11:00:00"), Time.parse("2015-09-26 19:00:00")]
-      # SUNDAY_GAMETIME   = [Time.parse("2015-09-27 10:00:00"), Time.parse("2015-09-27 18:00:00")]
       gametime_end = (current_round == 1 ? SATURDAY_GAMETIME.last : SUNDAY_GAMETIME.last)
       if gametime_end < row[:submitted_at]
         next

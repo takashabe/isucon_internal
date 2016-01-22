@@ -1,3 +1,5 @@
+import AssemblyKeys._
+
 name := "isucon_internal"
 
 organization := "com.github.takashabe"
@@ -23,3 +25,5 @@ libraryDependencies ++= Seq(
 )
 
 initialCommands := "import com.github.takashabe.isucon_internal._"
+
+assemblySettings

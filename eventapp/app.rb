@@ -1,11 +1,13 @@
 require 'sinatra/base'
 require 'sinatra/contrib'
+require 'sinatra/reloader'
 require 'mysql2-cs-bind'
 require 'tilt/erubis'
 require 'erubis'
 
 require 'time'
 require 'json'
+require 'logger'
 
 $leader_board = nil
 $leader_board_at = nil
@@ -28,6 +30,15 @@ class Isucon5Portal::WebApp < Sinatra::Base
   set :session_secret, ENV['ISUCON5_SESSION_SECRET'] || 'tony-moris'
   set :protection, true
 
+  # configure do
+  #   use Rack::Session::Cookie
+  # end
+
+  configure :development do
+    register Sinatra::Reloader
+  end
+  logger = Logger.new('/tmp/portal.log')
+
   IN_PROCESS_CACHE_TIMEOUT = 30
 
   MONDAY           = [Time.parse("2016-01-25 08:00:00"), Time.parse("2016-01-25 18:00:00")]
@@ -43,7 +54,7 @@ class Isucon5Portal::WebApp < Sinatra::Base
           port: ENV['ISUCON_DB_PORT'] && ENV['ISUCON_DB_PORT'].to_i,
           username: ENV['ISUCON_DB_USER'] || 'root',
           password: ENV['ISUCON_DB_PASSWORD'] || '',
-          database: ENV['ISUCON_DB_NAME'] || 'isucon_master',
+          database: ENV['ISUCON_DB_NAME'] || 'isucon_portal',
         },
       }
     end
@@ -82,8 +93,8 @@ class Isucon5Portal::WebApp < Sinatra::Base
     def in_game?(team)
       now = Time.now
       case team[:round]
-      when 1 then SATURDAY_GAMETIME.first < now && now < SATURDAY_GAMETIME.last
-      when 2 then SUNDAY_GAMETIME.first < now && now < SUNDAY_GAMETIME.last
+      when 1 then MONDAY_GAMETIME.first < now && now < MONDAY_GAMETIME.last
+      when 2 then TUESDAY_GAMETIME.first < now && now < TUESDAY_GAMETIME.last
       when 0 then true
       end
     end
@@ -195,46 +206,45 @@ SQL
 
   get '/project_check' do
     authenticated!
-    team = current_team()
+    return json({valid: true, message: "get /project_check"})
 
-    if $gcp_team_cache[team[:id]] && $gcp_team_cache[team[:id]][:expire] < Time.now
-      return json($gcp_team_cache[team[:id]][:value])
-    end
+    # if $gcp_team_cache[team[:id]] && $gcp_team_cache[team[:id]][:expire] < Time.now
+    #   return json($gcp_team_cache[team[:id]][:value])
+    # end
 
-    unless team[:project_id] && team[:zone_name] && team[:instance_name]
-      return json({valid: false, messages: ["GCEインスタンス情報が未登録です"]})
-    end
-    serverInfo = Isucon5Portal::GCloud.server_info(team[:project_id], team[:zone_name], team[:instance_name])
+    # unless team[:project_id] && team[:zone_name] && team[:instance_name]
+    #   return json({valid: false, messages: ["GCEインスタンス情報が未登録です"]})
+    # end
+    # serverInfo = Isucon5Portal::GCloud.server_info(team[:project_id], team[:zone_name], team[:instance_name])
 
-    unless serverInfo
-      value = {
-        valid: false,
-        messages: ["GCEインスタンス情報を正常に取得できません: ProjectId, Zone名, インスタンス名を確認してください", "主催者アカウントがプロジェクトに参加しているか確認してください"]
-      }
-      $gcp_team_cache[team[:id]] = {expire: Time.now + 300, value: value}
-      return json(value)
-    end
-    cautions = Isucon5Portal::GCloud.check_server_info(serverInfo)
-    if cautions.size > 0
-      value = {valid: false, messages: cautions}
-      $gcp_team_cache[team[:id]] = {expire: Time.now + 300, value: value}
-      return json(value)
-    end
-    ipaddr = Isucon5Portal::GCloud.valid_ip_address(team[:project_id], team[:zone_name], team[:instance_name])
-    value = {
-      valid: true,
-      ipaddress: ipaddr,
-      message: "IP Address:" + ipaddr,
-    }
-    $gcp_team_cache[team[:id]] = {expire: Time.now + 300, value: value}
-    json(value)
+    # unless serverInfo
+    #   value = {
+    #     valid: false,
+    #     messages: ["GCEインスタンス情報を正常に取得できません: ProjectId, Zone名, インスタンス名を確認してください", "主催者アカウントがプロジェクトに参加しているか確認してください"]
+    #   }
+    #   $gcp_team_cache[team[:id]] = {expire: Time.now + 300, value: value}
+    #   return json(value)
+    # end
+    # cautions = Isucon5Portal::GCloud.check_server_info(serverInfo)
+    # if cautions.size > 0
+    #   value = {valid: false, messages: cautions}
+    #   $gcp_team_cache[team[:id]] = {expire: Time.now + 300, value: value}
+    #   return json(value)
+    # end
+    # ipaddr = Isucon5Portal::GCloud.valid_ip_address(team[:project_id], team[:zone_name], team[:instance_name])
+    # value = {
+    #   valid: true,
+    #   ipaddress: ipaddr,
+    #   message: "IP Address:" + ipaddr,
+    # }
+    # $gcp_team_cache[team[:id]] = {expire: Time.now + 300, value: value}
+    # json(value)
   end
 
-  post '/enqueue' do
+  get '/enqueue' do
     authenticated!
 
     team = current_team()
-
     unless in_game?(team)
       return json({valid: false, message: "開始時刻まで待ってネ"})
     end
@@ -246,9 +256,6 @@ SQL
     end
 
     ip_address = params[:ip_address]
-    if ip_address.nil? || ip_address.empty?
-      ip_address = Isucon5Portal::GCloud.valid_ip_address(team[:project_id], team[:zone_name], team[:instance_name])
-    end
     if ip_address.nil? || ip_address.empty?
       return json({valid: false, message: "IPアドレスが取得できません"})
     end
@@ -316,7 +323,7 @@ WHERE t.round = ? AND s.summary = 'success'
 SQL
     db.xquery(team_scores_query, current_round).each do |row|
       team_id = row[:team_id]
-      gametime_end = (current_round == 1 ? SATURDAY_GAMETIME.last : SUNDAY_GAMETIME.last)
+      gametime_end = (current_round == 1 ? MONDAY_GAMETIME.last : TUESDAY_GAMETIME.last)
       if gametime_end < row[:submitted_at]
         next
       end

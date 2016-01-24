@@ -9,8 +9,8 @@ module Isucon5Portal
       #   "responses" : {
       #     "success" : 2,
       #     "redirect" : 1,
-      #     "failure" : 0,
-      #     "error" : 0,
+      #     "clientError" : 0,
+      #     "serverError" : 0,
       #     "exception" : 2
       #   },
       #   "violations" : [
@@ -27,7 +27,7 @@ module Isucon5Portal
       #   ]
       # }
       base_score = result["responses"]["success"] + result["responses"]["redirect"] * 0.1
-      minus_score = result["responses"]["error"] * 10 + result["responses"]["exception"] * 20
+      minus_score = result["responses"]["serverError"] * 10 + result["responses"]["exception"] * 20
 
       too_slow_penalty = 0
       too_slow_responses = result["violations"].select{|v| v["description"] =~ /アプリケーションが \d+ ミリ秒以内に応答しませんでした/ }

@@ -10,7 +10,7 @@ client = Mysql2::Client.new(
   port: nil,
   username: 'root',
   password: nil,
-  database: 'isucon_master',
+  database: 'isucon_portal',
   reconnect: true,
 )
 

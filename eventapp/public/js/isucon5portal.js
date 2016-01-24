@@ -25,7 +25,12 @@ $(function(){
 
 function requestEnqueue(event){
   event.preventDefault();
-  $.post("/enqueue", {ip_address: $("input#inputIPAddress").val()}, function(data){
+  //$.post("/enqueue", {ip_address: $("input#inputIPAddress").val()}, function(data){
+  //  $("#enqueue-request-result .modal-dialog .modal-content .modal-body #result-message").text(data.message);
+  //  $("#enqueue-request-result").modal();
+  //});
+
+  $.get("/enqueue", {ip_address: $("input#inputIPAddress").val()}, function(data){
     $("#enqueue-request-result .modal-dialog .modal-content .modal-body #result-message").text(data.message);
     $("#enqueue-request-result").modal();
   });
@@ -126,7 +131,6 @@ function updateLeaderBoard(){
 
 function updateProjectCheck(){
   $.get("/project_check", function(data){
-    console.log(data);
     $("#instance-status-check").html("");
     var base = $("#item_box #item-box-instance-check .check-success").clone();
     if (! data.valid) {

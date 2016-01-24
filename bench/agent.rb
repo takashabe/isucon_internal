@@ -3,8 +3,8 @@
 require "socket"
 MYHOSTNAME = Socket.gethostname
 
-MANAGER_ADDRESS = "localhost"
-MANAGER_USER = "isucon"
+MANAGER_ADDRESS = "192.168.33.11"
+MANAGER_USER = "root"
 MANAGER_PASSWORD = ""
 
 require "timeout"
@@ -16,7 +16,7 @@ client = Mysql2::Client.new(
   port: 3306,
   username: MANAGER_USER,
   password: MANAGER_PASSWORD,
-  database: 'isucon_master',
+  database: 'isucon_portal',
   reconnect: true,
 )
 client.query_options.merge!(symbolize_keys: true)
@@ -68,7 +68,7 @@ def run_benchmark(entry_id, ip_address, testset_json)
   result_path = "/tmp/result.#{entry_id}.json"
   stderr_path = "/tmp/err.#{entry_id}.log"
   scenario = "net.isucon.isucon5q.bench.scenario.Isucon5Qualification"
-  command = "cat #{source_path} | sbt run > #{result_path} 2>#{stderr_path}"
+  command = "cat #{source_path} | java -jar target/scala-2.11/isucon_internal-assembly-0.1.jar -h #{ip_address} > #{result_path} 2>#{stderr_path}"
 
   begin
     timeout(60*5) { system(command) }

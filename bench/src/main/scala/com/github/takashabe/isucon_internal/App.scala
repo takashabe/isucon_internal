@@ -8,8 +8,9 @@ import com.typesafe.scalalogging.LazyLogging
 object App extends LazyLogging {
   def main(args: Array[String]): Unit = {
     // CLIパース
-//    val cliParser = new CliParser
-//    val cliOption = cliParser.parse(args)
+    val cliParser = new CliParser
+    val cliOption = cliParser.parse(args)
+    logger.debug(cliOption.toString)
 
     // ベンチ用パラメータを取得
     val parameter = new Parameter
@@ -18,6 +19,6 @@ object App extends LazyLogging {
     val manager = new ScenarioManager
     val result = manager.run(benchParameter)
 
-    logger.info(result.toJson())
+    System.out.println(result.toJson())
   }
 }

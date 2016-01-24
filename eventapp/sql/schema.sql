@@ -1,8 +1,8 @@
-DROP DATABASE IF EXISTS isucon_master;
+DROP DATABASE IF EXISTS isucon_portal;
 
-CREATE DATABASE IF NOT EXISTS isucon_master;
+CREATE DATABASE IF NOT EXISTS isucon_portal;
 
-use isucon_master;
+use isucon_portal;
 
 CREATE TABLE IF NOT EXISTS teams (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS queue (
   `ip_address` varchar(32) NOT NULL,
   `testset_id` int NOT NULL,
   `acked_at` timestamp DEFAULT '0000-00-00 00:00:00',
-  `bench_node` varchar(64) DEFAULT NULL, 
+  `bench_node` varchar(64) DEFAULT NULL,
   `submitted_at` timestamp DEFAULT '0000-00-00 00:00:00',
   `json` text
 ) DEFAULT CHARSET=utf8mb4;

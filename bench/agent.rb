@@ -3,7 +3,7 @@
 require "socket"
 MYHOSTNAME = Socket.gethostname
 
-MANAGER_ADDRESS = "192.168.33.11"
+MANAGER_ADDRESS = "52.69.180.75"
 MANAGER_USER = "root"
 MANAGER_PASSWORD = ""
 

@@ -45,9 +45,9 @@ $app->add(new \Slim\Middleware\SessionCookie(array(
 function debug_logging($message)
 {
     if (is_array($message)) {
-        error_log(print_r($message), 4, '/tmp/php.log');
+        error_log(print_r($message), 3, '/tmp/php.log');
     } else {
-        error_log($message."\n", 4, '/tmp/php.log');
+        error_log($message."\n", 3, '/tmp/php.log');
     }
 }
 
@@ -170,8 +170,8 @@ $app->get('/', function () use ($app) {
         'SELECT * FROM tweet WHERE USER_ID IN (SELECT follow_id FROM follow WHERE USER_ID = ?) OR USER_ID = ? ORDER BY created_at DESC LIMIT 100',
         array($current_user['id'], $current_user['id']))->fetchAll();
 
-    $following = db_execute('SELECT * FROM follow WHERE user_id = ?', array($current_user['id']));
-    $followers = db_execute('SELECT * FROM follow WHERE follow_id = ?', array($current_user['id']));
+    $following = db_execute('SELECT * FROM follow WHERE user_id = ?', array($current_user['id']))->fetchAll();
+    $followers = db_execute('SELECT * FROM follow WHERE follow_id = ?', array($current_user['id']))->fetchAll();
 
     $locals = array(
         'user' => current_user(),

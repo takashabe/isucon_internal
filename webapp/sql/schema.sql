@@ -1,7 +1,7 @@
--- CREATE USER 'isucon';
--- GRANT ALL PRIVILEGES ON *.* TO 'isucon'@'localhost';
+CREATE USER 'isucon';
+GRANT ALL PRIVILEGES ON *.* TO 'isucon'@'localhost';
 
--- CREATE DATABASE isucon DEFAULT CHARACTER SET = utf8 COLLATE utf8_general_ci;
+CREATE DATABASE isucon DEFAULT CHARACTER SET = utf8 COLLATE utf8_general_ci;
 USE isucon;
 
 CREATE TABLE IF NOT EXISTS user (

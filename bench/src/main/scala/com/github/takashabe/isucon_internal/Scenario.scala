@@ -46,7 +46,7 @@ class ScenarioManager extends LazyLogging {
     List(
       List(new Init),
       List(new Bootstrap),
-      List(new Load, new Load, new Load, new LoadChecker)
+      List(new Load, new Load, new Load, new Load, new Load, new LoadChecker)
     )
   }
 
@@ -55,10 +55,10 @@ class ScenarioManager extends LazyLogging {
     *
     * @param params Parameterのリスト
     */
-  def run(params: List[Parameter]): Result = {
+  def run(params: List[Parameter], option: CliOption): Result = {
     val scenarios = orders()
     val sessions = createSession(params)
-    val config = new Config("http", "192.168.33.10", 80, "isucon", 3*60*1000)
+    val config = new Config("http", option.host, 80, "isucon", 3*60*1000)
 
     var doneResults = List[Result]()
     for(step <- scenarios) {
@@ -70,7 +70,7 @@ class ScenarioManager extends LazyLogging {
       val actorSystem = ActorSystem("Scenario")
       val actor = actorSystem.actorOf(Props[ScenarioActor].withRouter(new RoundRobinPool(step.size)))
       var sends = List[Future[Any]]()
-      implicit val timeout = Timeout(90 seconds)
+      implicit val timeout = Timeout(120 seconds)
 
       try {
         for (s <- step.zipWithIndex) {

@@ -10,14 +10,13 @@ object App extends LazyLogging {
     // CLIパース
     val cliParser = new CliParser
     val cliOption = cliParser.parse(args)
-    logger.debug(cliOption.toString)
 
     // ベンチ用パラメータを取得
     val parameter = new Parameter
     val benchParameter = parameter.generate("/param.json")
 
     val manager = new ScenarioManager
-    val result = manager.run(benchParameter)
+    val result = manager.run(benchParameter, cliOption)
 
     System.out.println(result.toJson())
   }

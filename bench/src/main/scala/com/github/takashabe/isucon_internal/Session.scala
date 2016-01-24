@@ -27,7 +27,7 @@ class Session(param: Parameter) extends LazyLogging {
     for(compareCookie <- compare; localCookie <- cookies) {
       if(compareCookie.getName == localCookie.getName) {
         localCookie.setValue(compareCookie.getValue)
-        cookies = compareCookie :: cookies
+//        cookies = compareCookie :: cookies
       }
     }
   }

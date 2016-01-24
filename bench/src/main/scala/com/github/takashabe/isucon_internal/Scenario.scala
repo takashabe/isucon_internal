@@ -70,7 +70,7 @@ class ScenarioManager extends LazyLogging {
       val actorSystem = ActorSystem("Scenario")
       val actor = actorSystem.actorOf(Props[ScenarioActor].withRouter(new RoundRobinPool(step.size)))
       var sends = List[Future[Any]]()
-      implicit val timeout = Timeout(60 seconds)
+      implicit val timeout = Timeout(90 seconds)
 
       try {
         for (s <- step.zipWithIndex) {

@@ -7,7 +7,7 @@ class Config(
   val scheme: String,
   val host: String,
   port: Int,
-  agent: String,
+  val agent: String,
   runningTime: Int)
 {
   val MaxRunningTime: Int = 3 * 60 * 1000

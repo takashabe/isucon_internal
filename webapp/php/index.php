@@ -28,17 +28,17 @@ class Isucon5View extends \Slim\View
 $app = new \Slim\Slim(array(
     'view' => new Isucon5View(),
     'db' => array(
-        'host' => getenv('ISUCON5_DB_HOST') ?: 'localhost',
-        'port' => (int)getenv('ISUCON5_DB_PORT') ?: 3306,
-        'username' => getenv('ISUCON5_DB_USER') ?: 'isucon',
-        'password' => getenv('ISUCON5_DB_PASSWORD'),
-        'database' => getenv('ISUCON5_DB_NAME') ?: 'isucon'
+        'host' => getenv('ISUCON_DB_HOST') ?: 'localhost',
+        'port' => (int)getenv('ISUCON_DB_PORT') ?: 3306,
+        'username' => getenv('ISUCON_DB_USER') ?: 'isucon',
+        'password' => getenv('ISUCON_DB_PASSWORD'),
+        'database' => getenv('ISUCON_DB_NAME') ?: 'isucon'
     ),
     'cookies.encrypt' => true,
 ));
 
 $app->add(new \Slim\Middleware\SessionCookie(array(
-    'secret' => getenv('ISUCON5_SESSION_SECRET') ?: 'beermoris',
+    'secret' => getenv('ISUCON_SESSION_SECRET') ?: 'isucon',
     'expires' => 0,
 )));
 

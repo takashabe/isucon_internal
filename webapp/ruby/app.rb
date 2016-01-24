@@ -134,7 +134,7 @@ SQL
   get '/' do
     authenticated!
     tweets = []
-    db.xquery('SELECT * FROM tweet WHERE USER_ID IN (SELECT follow_id FROM follow WHERE USER_ID=?) ORDER BY created_at DESC LIMIT 100', current_user[:id]).each do |row|
+    db.xquery('SELECT * FROM tweet WHERE USER_ID IN (SELECT follow_id FROM follow WHERE USER_ID=?) OR USER_ID = ? ORDER BY created_at DESC LIMIT 100', current_user[:id], current_user[:id]).each do |row|
       tweets << row
     end
 

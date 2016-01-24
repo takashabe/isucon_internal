@@ -68,7 +68,7 @@ def run_benchmark(entry_id, ip_address, testset_json)
   result_path = "/tmp/result.#{entry_id}.json"
   stderr_path = "/tmp/err.#{entry_id}.log"
   scenario = "net.isucon.isucon5q.bench.scenario.Isucon5Qualification"
-  command = "cat #{source_path} | java -jar target/scala-2.11/isucon_internal-assembly-0.1.jar -h #{ip_address} > #{result_path} 2>#{stderr_path}"
+  command = "cat #{source_path} | java -jar isucon_internal-assembly-0.1.jar -h #{ip_address} > #{result_path} 2>#{stderr_path}"
 
   begin
     timeout(60*5) { system(command) }

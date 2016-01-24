@@ -44,7 +44,11 @@ $app->add(new \Slim\Middleware\SessionCookie(array(
 
 function debug_logging($message)
 {
-    error_log($message."\n", 3, '/tmp/php.log');
+    if (is_array($message)) {
+        error_log(print_r($message), 4, '/tmp/php.log');
+    } else {
+        error_log($message."\n", 4, '/tmp/php.log');
+    }
 }
 
 function abort_authentication_error()
@@ -53,13 +57,6 @@ function abort_authentication_error()
     $_SESSION['user_id'] = null;
     $app->view->setLayout(null);
     $app->render('login.php', array('message' => 'ログインに失敗しました'), 401);
-    $app->stop();
-}
-
-function abort_permission_denied()
-{
-    global $app;
-    $app->render('error.php', array('message' => '友人のみしかアクセスできません'), 403);
     $app->stop();
 }
 
@@ -141,48 +138,12 @@ function get_user($user_id)
     return $user;
 }
 
-function user_from_account($account_name)
-{
-    $user = db_execute('SELECT * FROM user WHERE account_name = ?', array($account_name))->fetch();
-    if (!$user) abort_content_not_found();
-    return $user;
-}
-
-function is_friend($another_id)
+function is_follow($follow_id)
 {
     $user_id = $_SESSION['user_id'];
-    $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)';
-    $cnt = db_execute($query, array($user_id, $another_id, $another_id, $user_id))->fetch()['cnt'];
-    return $cnt > 0 ? true : false;
-}
-
-function is_friend_account($account_name)
-{
-    return is_friend(user_from_account($account_name)['id']);
-}
-
-function permitted($another_id)
-{
-    return $another_id == current_user()['id'] || is_friend($another_id);
-}
-
-function mark_footprint($user_id)
-{
-    if ($user_id != current_user()['id']) {
-        $query = 'INSERT INTO footprints (user_id,owner_id) VALUES (?,?)';
-        db_execute($query, array($user_id, current_user()['id']));
-    }
-}
-
-function prefectures()
-{
-    static $PREFS = array(
-        '未入力',
-        '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県', '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県', '富山県',
-        '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県', '鳥取県', '島根県',
-        '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
-    );
-    return $PREFS;
+    $query = 'SELECT COUNT(1) AS cnt FROM follow WHERE user_id = ? AND follow_id = ?';
+    $cnt = db_execute($query, array($user_id, $follow_id))->fetch()['cnt'];
+    return $cnt > 0;
 }
 
 $app->get('/login', function () use ($app) {
@@ -205,7 +166,9 @@ $app->get('/', function () use ($app) {
     authenticated();
     $current_user = current_user();
 
-    $tweets = db_execute('SELECT * FROM tweet WHERE USER_ID IN (SELECT follow_id FROM follow WHERE USER_ID = ?) ORDER BY created_at DESC LIMIT 100', array($current_user['id']))->fetchAll();
+    $tweets = db_execute(
+        'SELECT * FROM tweet WHERE USER_ID IN (SELECT follow_id FROM follow WHERE USER_ID = ?) OR USER_ID = ? ORDER BY created_at DESC LIMIT 100',
+        array($current_user['id'], $current_user['id']))->fetchAll();
 
     $following = db_execute('SELECT * FROM follow WHERE user_id = ?', array($current_user['id']));
     $followers = db_execute('SELECT * FROM follow WHERE follow_id = ?', array($current_user['id']));
@@ -219,171 +182,66 @@ $app->get('/', function () use ($app) {
     $app->render('index.php', $locals);
 });
 
-$app->get('/profile/:account_name', function ($account_name) use ($app) {
+$app->get('/tweet', function () use ($app) {
     authenticated();
-    $owner = user_from_account($account_name);
-    $prof = db_execute('SELECT * FROM profiles WHERE user_id = ?', array($owner['id']))->fetch();
-    if (!$prof) $prof = array();
-    if (permitted($owner['id'])) {
-        $query = 'SELECT * FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5';
-    } else {
-        $query = 'SELECT * FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5';
-    }
-    $entries = array();
-    $stmt = db_execute($query, array($owner['id']));
-    while ($entry = $stmt->fetch()) {
-        $entry['is_private'] = ($entry['private'] == 1);
-        list($title, $content) = preg_split('/\n/', $entry['body'], 2);
-        $entry['title'] = $title;
-        $entry['content'] = $content;
-        $entries[] = $entry;
-    }
-    mark_footprint($owner['id']);
-    $locals = array(
-        'owner' => $owner,
-        'profile' => $prof,
-        'entries' => $entries,
-        'private' => permitted($owner['id']),
-    );
-    $app->render('profile.php', $locals);
+    $app->render('tweet.php');
 });
 
-$app->post('/profile/:account_name', function ($account_name) use ($app) {
+$app->post('/tweet', function () use ($app) {
     authenticated();
-    if ($account_name != current_user()['account_name']) {
-        abort_permission_denied();
-    }
     $params = $app->request->params();
-    $args = array($params['first_name'], $params['last_name'], $params['sex'], $params['birthday'], $params['pref']);
-
-    $prof = db_execute('SELECT * FROM profiles WHERE user_id = ?', array(current_user()['id']))->fetch();
-    if ($prof) {
-      $query = <<<SQL
-UPDATE profiles
-SET first_name=?, last_name=?, sex=?, birthday=?, pref=?, updated_at=CURRENT_TIMESTAMP()
-WHERE user_id = ?
-SQL;
-      $args[] = current_user()['id'];
-    } else {
-      $query = <<<SQL
-INSERT INTO profiles (user_id,first_name,last_name,sex,birthday,pref) VALUES (?,?,?,?,?,?)
-SQL;
-        array_unshift($args, current_user()['id']);
-    }
-    db_execute($query, $args);
-    $app->redirect('/profile/'.$account_name);
+    db_execute('INSERT INTO tweet (user_id, content) VALUES (?, ?)', array(current_user()['id'], $params['content']));
+    $app->redirect('/');
 });
 
-$app->get('/diary/entries/:account_name', function ($account_name) use ($app) {
+$app->get('/user/:user_id', function ($user_id) use ($app) {
     authenticated();
-    $owner = user_from_account($account_name);
-    if (permitted($owner['id'])) {
-        $query = 'SELECT * FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20';
-    } else {
-        $query = 'SELECT * FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20';
-    }
-    $entries = array();
-    $stmt = db_execute($query, array($owner['id']));
-    while ($entry = $stmt->fetch()) {
-        $entry['is_private'] = ($entry['private'] == 1);
-        list($title, $content) = preg_split('/\n/', $entry['body'], 2);
-        $entry['title'] = $title;
-        $entry['content'] = $content;
-        $entries[] = $entry;
-    }
-    mark_footprint($owner['id']);
+    $user = get_user($user_id);
+    $tweets = db_execute('SELECT * FROM tweet WHERE user_id = ? ORDER BY created_at DESC LIMIT 100', array($user_id))->fetchAll();
     $locals = array(
-        'owner' => $owner,
-        'entries' => $entries,
-        'myself' => (current_user()['id'] == $owner['id']),
+        'user' => $user,
+        'tweets' => $tweets,
+        'myself' => current_user(),
     );
-    $app->render('entries.php', $locals);
+    $app->render('user.php', $locals);
 });
 
-$app->get('/diary/entry/:entry_id', function ($entry_id) use ($app) {
+$app->get('/following', function () use ($app) {
     authenticated();
-    $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($entry_id))->fetch();
-    if (!$entry) abort_content_not_found();
-    list($title, $content) = preg_split('/\n/', $entry['body'], 2);
-    $entry['title'] = $title;
-    $entry['content'] = $content;
-    $entry['is_private'] = ($entry['private'] == 1);
-    $owner = get_user($entry['user_id']);
-    if ($entry['is_private'] && !permitted($owner['id'])) {
-        abort_permission_denied();
+    $following = db_execute('SELECT * FROM follow WHERE user_id = ?', array(current_user()['id']))->fetchAll();
+    $following_user = array();
+    foreach($following as $f) {
+        $user = db_execute('SELECT * FROM user WHERE id = ?', array($f['follow_id']))->fetch();
+        $following_user[] = $user;
     }
-    $comments = db_execute('SELECT * FROM comments WHERE entry_id = ?', array($entry['id']))->fetchAll();
-    mark_footprint($owner['id']);
     $locals = array(
-        'owner' => $owner,
-        'entry' => $entry,
-        'comments' => $comments,
+        'following' => $following_user,
     );
-    $app->render('entry.php', $locals);
+    $app->render('following.php', $locals);
 });
 
-$app->post('/diary/entry', function () use ($app) {
+$app->post('/follow/:user_id', function ($user_id) use ($app) {
     authenticated();
-    $query = 'INSERT INTO entries (user_id, private, body) VALUES (?,?,?)';
-    $params = $app->request->params();
-    $title = isset($params['title']) ? $params['title'] : "タイトルなし";
-    $content = isset($params['content']) ? $params['content'] : "";
-    $body = $title . "\n" . $content;
-    db_execute($query, array(current_user()['id'], (isset($params['private']) ? '1' : '0'), $body));
-    $app->redirect('/diary/entries/'.current_user()['account_name']);
+    db_execute('INSERT INTO follow (user_id, follow_id) VALUES (?, ?)', array(current_user()['id'], $user_id));
+    $app->redirect('/');
 });
 
-$app->post('/diary/comment/:entry_id', function ($entry_id) use ($app) {
+$app->get('/followers', function () use ($app) {
     authenticated();
-    $entry = db_execute('SELECT * FROM entries WHERE id = ?', array($entry_id))->fetch();
-    if (!$entry) abort_content_not_found();
-    $entry['is_private'] = ($entry['private'] == 1);
-    if ($entry['is_private'] && !permitted($entry['user_id'])) {
-        abort_permission_denied();
+    $followers = db_execute('SELECT * FROM follow WHERE follow_id = ?', array(current_user()['id']))->fetchAll();
+    $followers_user = array();
+    foreach($followers as $f) {
+        $user = db_execute('SELECT * FROM user WHERE id = ?', array($f['user_id']))->fetch();
+        $followers_user[] = $user;
     }
-    $query = 'INSERT INTO comments (entry_id, user_id, comment) VALUES (?,?,?)';
-    $params = $app->request->params();
-    db_execute($query, array($entry['id'], current_user()['id'], $params['comment']));
-    $app->redirect('/diary/entry/'.$entry['id']);
-});
-
-$app->get('/footprints', function () use ($app) {
-    authenticated();
-    $query = <<<SQL
-SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) as updated
-FROM footprints
-WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
-ORDER BY updated DESC
-LIMIT 50
-SQL;
-    $footprints = db_execute($query, array(current_user()['id']))->fetchAll();
-    $app->render('footprints.php', array('footprints' => $footprints));
-});
-
-$app->get('/friends', function () use ($app) {
-    authenticated();
-    $query = 'SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC';
-    $friends = array();
-    $stmt = db_execute($query, array(current_user()['id'], current_user()['id']));
-    while ($rel = $stmt->fetch()) {
-        $key = ($rel['one'] == current_user()['id'] ? 'another' : 'one');
-        if (!isset($friends[$rel[$key]])) $friends[$rel[$key]] = $rel['created_at'];
-    }
-    $app->render('friends.php', array('friends' => $friends));
-});
-
-$app->post('/friends/:account_name', function ($account_name) use ($app) {
-    authenticated();
-    if (!is_friend_account($account_name)) {
-        $user = user_from_account($account_name);
-        if (!$user) abort_content_not_found();
-        db_execute('INSERT INTO relations (one, another) VALUES (?,?), (?,?)', array(current_user()['id'], $user['id'], $user['id'], current_user()['id']));
-        $app->redirect('/friends');
-    }
+    $locals = array(
+        'followers' => $followers_user,
+    );
+    $app->render('followers.php', $locals);
 });
 
 $app->get('/initialize', function () use ($app) {
+    exec('/bin/sh ../tools/init.sh');
 });
 
 $app->run();

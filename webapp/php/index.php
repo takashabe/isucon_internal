@@ -4,7 +4,7 @@ require 'vendor/autoload.php';
 date_default_timezone_set('Asia/Tokyo');
 mb_internal_encoding('UTF-8');
 
-class Isucon5View extends \Slim\View
+class IsuconView extends \Slim\View
 {
     protected $layout = 'layout.php';
 
@@ -26,7 +26,7 @@ class Isucon5View extends \Slim\View
 }
 
 $app = new \Slim\Slim(array(
-    'view' => new Isucon5View(),
+    'view' => new IsuconView(),
     'db' => array(
         'host' => getenv('ISUCON_DB_HOST') ?: 'localhost',
         'port' => (int)getenv('ISUCON_DB_PORT') ?: 3306,
@@ -41,15 +41,6 @@ $app->add(new \Slim\Middleware\SessionCookie(array(
     'secret' => getenv('ISUCON_SESSION_SECRET') ?: 'isucon',
     'expires' => 0,
 )));
-
-function debug_logging($message)
-{
-    if (is_array($message)) {
-        error_log(print_r($message), 3, '/tmp/php.log');
-    } else {
-        error_log($message."\n", 3, '/tmp/php.log');
-    }
-}
 
 function abort_authentication_error()
 {

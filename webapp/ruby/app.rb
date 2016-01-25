@@ -22,29 +22,28 @@ class Isucon::WebApp < Sinatra::Base
   use Rack::Session::Cookie
   set :erb, escape_html: true
   set :public_folder, File.expand_path('../../static', __FILE__)
-  set :session_secret, ENV['ISUCON5_SESSION_SECRET'] || 'beermoris'
+  set :session_secret, ENV['ISUCON_SESSION_SECRET'] || 'beermoris'
   set :protection, true
 
   configure :development do
     register Sinatra::Reloader
   end
-  logger = Logger.new('/tmp/ruby.log')
 
   helpers do
     def config
       @config ||= {
         db: {
-          host: ENV['ISUCON5_DB_HOST'] || 'localhost',
-          port: ENV['ISUCON5_DB_PORT'] && ENV['ISUCON5_DB_PORT'].to_i,
-          username: ENV['ISUCON5_DB_USER'] || 'isucon',
-          password: ENV['ISUCON5_DB_PASSWORD'],
-          database: ENV['ISUCON5_DB_NAME'] || 'isucon',
+          host: ENV['ISUCON_DB_HOST'] || 'localhost',
+          port: ENV['ISUCON_DB_PORT'] && ENV['ISUCON_DB_PORT'].to_i,
+          username: ENV['ISUCON_DB_USER'] || 'isucon',
+          password: ENV['ISUCON_DB_PASSWORD'],
+          database: ENV['ISUCON_DB_NAME'] || 'isucon',
         },
       }
     end
 
     def db
-      return Thread.current[:isucon5_db] if Thread.current[:isucon5_db]
+      return Thread.current[:isucon_db] if Thread.current[:isucon_db]
       client = Mysql2::Client.new(
         host: config[:db][:host],
         port: config[:db][:port],
@@ -54,7 +53,7 @@ class Isucon::WebApp < Sinatra::Base
         reconnect: true,
       )
       client.query_options.merge!(symbolize_keys: true)
-      Thread.current[:isucon5_db] = client
+      Thread.current[:isucon_db] = client
       client
     end
 

@@ -138,7 +138,7 @@ def is_follow(follow_id):
 @app.get("/login")
 def get_login():
     set_session_user_id(None)
-    return bottle.template("login", {"message": "高負荷に耐えられるSNSコミュニティサイトへようこそ!"})
+    return bottle.template("login", {"message": "バルスでも落ちないツイッターへようこそ！"})
 
 
 @app.post("/login")

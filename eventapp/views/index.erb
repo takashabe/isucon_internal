@@ -13,6 +13,7 @@
 
 <div style="padding-top: 4em;"></div>
 
+<% if is_game_team %>
 <div id="command" class="panel panel-default">
   <div class="panel-heading"><h5>Request benchmark</h5></div>
   <div class="panel-body">
@@ -30,7 +31,9 @@
     </form>
   </div>
 </div>
+<% end %>
 
+<% if is_game_team %>
 <div class="page-header">
   <h2>Score History</h2>
 </div>
@@ -39,6 +42,7 @@
     <tr id="history-header"><th>timestamp</th><th style="text-align:right;">score</th><th></th></tr>
   </table>
 </div>
+<% end %>
 
 <div class="page-header">
   <h2>Latest Top 20</h2>

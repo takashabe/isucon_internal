@@ -17,14 +17,15 @@
       </div>
       <div class="form-group">
         <label for="inputRound">参加日</label>
-        <input type="text" class="form-control" id="inputRound" name="round" value="<%= case round when 1 then '月曜日' when 2 then '火曜日' else '運営' end %>" size="30" readonly />
+        <input type="text" class="form-control" id="inputRound" name="round" value="<%= case round when 1 then '月曜日' when 2 then '火曜日' when 3 then 'ゲスト' else '運営' end %>" size="30" readonly />
       </div>
+      <% if is_game_team %>
       <div class="form-group">
         <label for="inputTargetIP">ベンチマーク対象IPアドレス</label>
         <input type="text" class="form-control" id="inputProje" name="target_instance" value="<%= target_instance %>" size="30" />
       </div>
-
       <button type="submit" class="btn btn-default">更新</button>
+      <% end %>
     </form>
   </div>
 </div>

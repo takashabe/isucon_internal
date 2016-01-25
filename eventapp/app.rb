@@ -104,8 +104,14 @@ class Isucon5Portal::WebApp < Sinatra::Base
       case team[:round]
       when 1 then MONDAY.first < now && now < MONDAY.last
       when 2 then TUESDAY.first < now && now < TUESDAY.last
+      when 3 then (MONDAY.first < now && now < MONDAY.last) || (TUESDAY.first < now && now < TUESDAY.last)
       when 0 then true
       end
+    end
+
+    def is_game_team?(team)
+      round = team[:round]
+      0 <= round and round < 3
     end
 
     def authenticate(email, password)
@@ -167,7 +173,7 @@ SQL
   get '/' do
     authenticated!
     team = current_team()
-    erb :index, locals: {enable_actions: true, team_id: team[:id], team_name: team[:team]}
+    erb :index, locals: {enable_actions: true, team_id: team[:id], team_name: team[:team], is_game_team: is_game_team?(team)}
   end
 
   get '/messages' do
@@ -191,7 +197,8 @@ SQL
       # project_id: team[:project_id],
       # zone_name: team[:zone_name],
       # instance_name: team[:instance_name],
-      target_instance: team[:target_instance]
+      target_instance: team[:target_instance],
+      is_game_team: is_game_team?(team)
     }
     erb :team, locals: data
   end

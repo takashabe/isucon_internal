@@ -78,8 +78,12 @@ class Isucon5Portal::WebApp < Sinatra::Base
       team[:round] == 0
     end
 
+    def is_guest?(team)
+      team[:round] == 3
+    end
+
     def in_game_round_number(team)
-      if is_organizer?(team)
+      if is_organizer?(team) or is_guest?(team)
         if Time.now < TUESDAY.first
           1
         else

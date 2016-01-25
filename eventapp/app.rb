@@ -291,7 +291,7 @@ SQL
   get '/history' do
     authenticated!
     query = "SELECT id, summary, score, submitted_at FROM scores WHERE team_id = ? ORDER BY submitted_at DESC"
-    json(db.xquery(query, current_team[:id]).map{|row| { id: row[:id], team_id: current_team[:id], success: (row[:summary] == 'success'), score: row[:score], submitted_at: row[:submitted_at].strftime("%H:%M:%S") } })
+    json(db.xquery(query, current_team[:id]).map{|row| { id: row[:id], team_id: current_team[:id], success: (row[:summary] == 'success'), score: row[:score], submitted_at: (row[:submitted_at] + 9*60*60).strftime("%H:%M:%S") } })
   end
 
   get '/queuestat' do

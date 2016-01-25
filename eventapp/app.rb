@@ -188,9 +188,10 @@ SQL
       team: team[:team],
       email: team[:email],
       round: team[:round],
-      project_id: team[:project_id],
-      zone_name: team[:zone_name],
-      instance_name: team[:instance_name]
+      # project_id: team[:project_id],
+      # zone_name: team[:zone_name],
+      # instance_name: team[:instance_name],
+      target_instance: team[:target_instance]
     }
     erb :team, locals: data
   end
@@ -198,9 +199,9 @@ SQL
   post '/team' do
     authenticated!
     query = <<SQL
-UPDATE teams SET project_id=?, zone_name=?, instance_name=? WHERE id=?
+UPDATE teams SET target_instance = ? WHERE id=?
 SQL
-    db.xquery(query, params[:project_id].strip, params[:zone_name].strip, params[:instance_name].strip, session[:team_id])
+    db.xquery(query, params[:target_instance].strip, session[:team_id])
     redirect '/'
   end
 
@@ -256,11 +257,14 @@ SQL
     end
 
     ip_address = params[:ip_address]
+    if (ip_address.nil? || ip_address.empty?) && !team[:target_instance].nil?
+       ip_address = team[:target_instance]
+    end
     if ip_address.nil? || ip_address.empty?
       return json({valid: false, message: "IPアドレスが取得できません"})
     end
     unless ip_address =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/ && $1.to_i < 256 && $2.to_i < 256 && $3.to_i < 256 && $4.to_i < 256
-      return json({valid: false, message: "IPアドレスを入力してください"})
+      return json({valid: false, message: "不正なIPアドレスが登録されています"})
     end
 
     testset_ids = db.xquery("SELECT id FROM testsets").map{|obj| obj[:id]}

@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS teams (
   `round` int NOT NULL, -- 1 is Monday, 2 is Tuesday, 0 is Both(only for organizer)
   `project_id` varchar(128),
   `zone_name` varchar(128),
-  `instance_name` varchar(128)
+  `instance_name` varchar(128),
+  `target_instance` varchar(128) DEFAULT NULL
 ) DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS queue (

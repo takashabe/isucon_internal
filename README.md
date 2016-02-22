@@ -18,7 +18,10 @@
 
 * webapp
   * ami-b5e8e8db
+  * m4.xlarge
 * bench
   * ami-6feeee01
+  * c4.2xlarge
 * portal
   * ami-6deeee03
+  * m4.xlarge
